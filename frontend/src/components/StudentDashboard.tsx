@@ -3,6 +3,7 @@ import { BookOpen, Calendar as CalendarIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CalendarView from './CalendarView';
 import TimetableView from './TimetableView';
+import MyPerformance from './MyPerformance';
 import api from '../lib/axios';
 
 type Classroom = {
@@ -13,7 +14,7 @@ type Classroom = {
 };
 
 export default function StudentDashboard() {
-  const [activeTab, setActiveTab] = useState<'classes' | 'calendar' | 'timetable'>('classes');
+  const [activeTab, setActiveTab] = useState<'classes' | 'calendar' | 'timetable' | 'performance'>('classes');
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState('');
@@ -60,28 +61,56 @@ export default function StudentDashboard() {
       {/* Sidebar */}
       <div className="w-full md:w-64 flex-shrink-0">
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col gap-2 sticky top-8">
-          <button 
+          <button
             onClick={() => setActiveTab('classes')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${activeTab === 'classes' ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-inner' : 'hover:bg-white/5 text-gray-300 border border-transparent'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'classes' 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            }`}
           >
-            <BookOpen size={20} className={activeTab === 'classes' ? 'text-blue-400' : 'text-gray-400'} />
-            <span className="font-medium">Enrolled Classes</span>
+            <BookOpen size={20} />
+            <span className="font-medium">My Classes</span>
           </button>
           
-          <button 
+          <button
             onClick={() => setActiveTab('calendar')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${activeTab === 'calendar' ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-inner' : 'hover:bg-white/5 text-gray-300 border border-transparent'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'calendar'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            }`}
           >
-            <CalendarIcon size={20} className={activeTab === 'calendar' ? 'text-blue-400' : 'text-gray-400'} />
-            <span className="font-medium">Calendar</span>
+            <CalendarIcon size={20} />
+            <span className="font-medium">Events Calendar</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('timetable')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'timetable'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="font-medium">Timetable</span>
           </button>
 
-          <button 
-            onClick={() => setActiveTab('timetable')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${activeTab === 'timetable' ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-inner' : 'hover:bg-white/5 text-gray-300 border border-transparent'}`}
+          <button
+            onClick={() => setActiveTab('performance')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'performance'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            }`}
           >
-            <CalendarIcon size={20} className={activeTab === 'timetable' ? 'text-blue-400' : 'text-gray-400'} />
-            <span className="font-medium">Timetable</span>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <span className="font-medium">My Performance</span>
           </button>
         </div>
       </div>
@@ -149,6 +178,12 @@ export default function StudentDashboard() {
         {activeTab === 'timetable' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <TimetableView />
+          </div>
+        )}
+        
+        {activeTab === 'performance' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <MyPerformance />
           </div>
         )}
       </div>

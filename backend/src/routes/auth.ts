@@ -26,6 +26,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    if (user.approval_status === 'REJECTED') {
+      return res.status(403).json({ error: 'Your account has been deactivated or rejected by the HOD.' });
+    }
+
     const token = jwt.sign(
       { id: user.id, role: user.role, name: user.name, email: user.email, department_id: user.department_id, academic_year: user.academic_year, subject: user.subject, approval_status: user.approval_status },
       process.env.JWT_SECRET || 'fallback_secret',

@@ -4,6 +4,19 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+router.get('/students', authenticate, async (req: AuthRequest, res) => {
+  const user = req.user;
+  if (!user || !['TEACHER', 'HOD'].includes(user.role)) return res.status(403).json({ error: 'Unauthorized' });
+
+  try {
+    const dbRes = await query("SELECT id, name, email FROM users WHERE role = 'STUDENT' ORDER BY name ASC");
+    return res.json(dbRes.rows);
+  } catch (error) {
+    console.error('Fetch students error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/teachers', authenticate, async (req: AuthRequest, res) => {
   const user = req.user;
   if (!user || user.role !== 'HOD') return res.status(403).json({ error: 'Only HOD can view this' });
