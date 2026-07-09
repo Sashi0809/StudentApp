@@ -10,7 +10,7 @@ import timetablesRoutes from './routes/timetables';
 import usersRoutes from './routes/users';
 import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const app = express();
 
