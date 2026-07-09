@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Calendar as CalendarIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import CalendarView from './CalendarView';
 import TimetableView from './TimetableView';
 import api from '../lib/axios';
@@ -128,13 +129,13 @@ export default function StudentDashboard() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
                 {classrooms.map(c => (
-                  <div key={c.id} className="bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-6 relative overflow-hidden group hover:border-blue-500/50 hover:shadow-blue-500/20 hover:shadow-xl transition-all h-full flex flex-col">
+                  <Link to={`/classrooms/${c.id}`} key={c.id} className="block bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-6 relative overflow-hidden group hover:border-blue-500/50 hover:shadow-blue-500/20 hover:shadow-xl transition-all h-full flex flex-col">
                     <h4 className="text-xl font-bold mb-2 text-white group-hover:text-blue-300 transition-colors">{c.name}</h4>
                     <p className="text-gray-300 text-sm mb-4 line-clamp-3 flex-grow">{c.description || 'No description provided.'}</p>
                     <div className="absolute top-[-20px] right-[-20px] text-8xl opacity-5 group-hover:opacity-10 transition-all transform group-hover:scale-110 group-hover:rotate-12 duration-500">
                       🎓
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

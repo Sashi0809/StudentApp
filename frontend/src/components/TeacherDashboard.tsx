@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, Plus, CheckCircle, Trash2, Video, Key } from 'lucide-react';
+import { Key } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
 import TimetableView from './TimetableView';
@@ -119,14 +120,14 @@ export default function TeacherDashboard() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {classrooms.map(c => (
-            <div key={c.id} className="bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-6 relative overflow-hidden group hover:border-purple-500/50 hover:shadow-purple-500/20 hover:shadow-xl transition-all">
+            <Link to={`/classrooms/${c.id}`} key={c.id} className="block bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-6 relative overflow-hidden group hover:border-purple-500/50 hover:shadow-purple-500/20 hover:shadow-xl transition-all">
               <h4 className="text-xl font-bold mb-2 text-white">{c.name}</h4>
               <p className="text-gray-300 text-sm mb-4 line-clamp-2">{c.description || 'No description provided.'}</p>
               <div className="bg-black/40 rounded-lg px-4 py-3 flex items-center justify-between border border-white/10">
                 <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Join Code</span>
                 <span className="font-mono text-purple-300 font-bold tracking-widest text-lg bg-purple-500/10 px-2 py-1 rounded">{c.join_code}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
