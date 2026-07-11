@@ -12,7 +12,7 @@ const router = Router();
 const runPrediction = async (data: any): Promise<number> => {
   return new Promise((resolve, reject) => {
     const pythonScript = path.join(__dirname, '../../ml/predict_json.py');
-    const pythonProcess = spawn('python', [pythonScript]);
+    const pythonProcess = spawn('python', [pythonScript], { timeout: 10000 });
 
     let result = '';
     let errorOutput = '';
@@ -48,6 +48,7 @@ const runPrediction = async (data: any): Promise<number> => {
 router.post('/', authenticate, async (req: AuthRequest, res) => {
   const { user } = req;
   if (user.role !== 'TEACHER') return res.status(403).json({ error: 'Unauthorized' });
+  if (user.approval_status !== 'APPROVED') return res.status(403).json({ error: 'Your account is pending approval.' });
 
   const { student_id, attendance, mid_sem_1, mid_sem_2, internal_marks, end_sem_marks } = req.body;
   const subject = user.subject;
@@ -252,7 +253,7 @@ router.post('/predict-marks', authenticate, async (req: AuthRequest, res) => {
     };
     
     const pythonScript = path.join(__dirname, '../../ml/predict_json.py');
-    const pythonProcess = spawn('python', [pythonScript]);
+    const pythonProcess = spawn('python', [pythonScript], { timeout: 10000 });
 
     let result = '';
     let errorOutput = '';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar as CalendarIcon } from 'lucide-react';
+import { BookOpen, Calendar as CalendarIcon, Clock, AlertCircle, Folder, ClipboardList, TrendingUp, History, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CalendarView from './CalendarView';
 import TimetableView from './TimetableView';
@@ -15,28 +15,43 @@ type Classroom = {
   teacher_id: string;
 };
 
+// Google Classroom style banner colors
+const BANNER_COLORS = [
+  'bg-blue-600',
+  'bg-purple-700',
+  'bg-emerald-600',
+  'bg-orange-600',
+  'bg-teal-700',
+  'bg-indigo-600'
+];
+
 export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState<'classes' | 'calendar' | 'timetable' | 'performance' | 'predictor' | 'history'>('classes');
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const fetchClassrooms = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const res = await api.get('/classrooms');
-      setClassrooms(res.data);
+      const [classRes, assignRes] = await Promise.all([
+        api.get('/classrooms'),
+        api.get('/users/me/assignments')
+      ]);
+      setClassrooms(classRes.data);
+      setPendingAssignments(assignRes.data);
     } catch (err) {
-      console.error('Failed to fetch classrooms', err);
+      console.error('Failed to fetch dashboard data', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchClassrooms();
+    fetchDashboardData();
   }, []);
 
   const handleJoin = async (e: React.FormEvent) => {
@@ -48,7 +63,7 @@ export default function StudentDashboard() {
       await api.post('/enrollments', { joinCode });
       setJoinCode('');
       setSuccess('Successfully joined the classroom!');
-      fetchClassrooms();
+      fetchDashboardData();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to join classroom');
     } finally {
@@ -56,178 +71,201 @@ export default function StudentDashboard() {
     }
   };
 
-  if (loading) return <div className="mt-8 text-gray-300">Loading your dashboard...</div>;
+  if (loading) return <div className="p-8 text-gray-700 font-medium">Loading your classes...</div>;
 
   return (
-    <div className="mt-8 flex flex-col md:flex-row gap-8">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] w-full">
       {/* Sidebar */}
-      <div className="w-full md:w-64 flex-shrink-0">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col gap-2 sticky top-8">
+      <div className="w-full md:w-72 flex-shrink-0 bg-white border-r border-gray-200 h-full overflow-y-auto py-3 pr-4">
+        <div className="flex flex-col gap-1">
           <button
             onClick={() => setActiveTab('classes')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'classes' 
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium' 
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <BookOpen size={20} />
-            <span className="font-medium">My Classes</span>
+            <BookOpen size={20} className={activeTab === 'classes' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Home</span>
           </button>
           
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'calendar'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <CalendarIcon size={20} />
-            <span className="font-medium">Events Calendar</span>
+            <CalendarIcon size={20} className={activeTab === 'calendar' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Calendar</span>
           </button>
           
+          <div className="my-2 border-t border-gray-200 ml-6"></div>
+          <div className="px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Academics</div>
+
           <button
             onClick={() => setActiveTab('timetable')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'timetable'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span className="font-medium">Timetable</span>
+            <Clock size={20} className={activeTab === 'timetable' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Timetable</span>
           </button>
 
           <button
             onClick={() => setActiveTab('performance')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'performance'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            <span className="font-medium">My Performance</span>
+            <Activity size={20} className={activeTab === 'performance' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>My Performance</span>
           </button>
           
           <button
             onClick={() => setActiveTab('predictor')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'predictor'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <span className="font-medium">Mark Predictor</span>
+            <TrendingUp size={20} className={activeTab === 'predictor' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Mark Predictor</span>
           </button>
 
           <button
             onClick={() => setActiveTab('history')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'history'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="font-medium">Academic History</span>
+            <History size={20} className={activeTab === 'history' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Academic History</span>
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 overflow-y-auto bg-white p-6 md:p-8">
         {activeTab === 'classes' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-2xl font-semibold mb-6 text-blue-100 flex items-center gap-2">
-              <BookOpen className="text-blue-400" /> My Classes
-            </h2>
+          <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
             
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-8 flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between">
-              <div>
-                <h3 className="text-xl mb-2 text-blue-300 font-medium">Join a Classroom</h3>
-                <p className="text-sm text-gray-400">Ask your teacher for the class code, then enter it here.</p>
+            {/* Top Banner mock */}
+            <div className="mb-8 bg-blue-50 border border-blue-100 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+              <div className="z-10">
+                <h2 className="text-xl font-medium text-blue-900 mb-2">Introducing Generative AI for Students</h2>
+                <p className="text-blue-800 text-sm max-w-2xl">A two-hour, no-cost online course. Save time and enhance learning with generative AI.</p>
               </div>
-              <form onSubmit={handleJoin} className="flex gap-3 w-full xl:w-auto">
-                <div className="flex-1 min-w-[200px]">
-                  <input 
-                    required
-                    type="text" 
-                    value={joinCode}
-                    onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                    className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-2.5 text-white font-mono uppercase focus:outline-none focus:border-blue-500 transition-colors shadow-inner tracking-widest text-center"
-                    placeholder="e.g. A1B2C3"
-                    maxLength={10}
-                  />
-                </div>
+              <div className="flex gap-4 mt-4 md:mt-0 z-10">
+                <button className="px-4 py-2 border border-blue-600 text-blue-700 hover:bg-blue-50 font-medium rounded-md transition-colors text-sm">Learn more</button>
+                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-sm">Get started</button>
+              </div>
+              {/* decorative circle */}
+              <div className="absolute right-[-5%] top-[-50%] w-64 h-64 bg-blue-100 rounded-full opacity-50"></div>
+            </div>
+
+            {/* Join Class form - subtle */}
+            <div className="mb-8 flex justify-end">
+              <form onSubmit={handleJoin} className="flex gap-2">
+                <input 
+                  required
+                  type="text" 
+                  value={joinCode}
+                  onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                  className="w-48 bg-gray-50 border border-gray-300 rounded px-3 py-1.5 text-gray-900 text-sm focus:outline-none focus:border-blue-500 transition-colors uppercase tracking-wider"
+                  placeholder="Class Code"
+                  maxLength={10}
+                />
                 <button 
                   type="submit" 
                   disabled={isJoining || !joinCode}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-medium disabled:opacity-50 transition-colors shadow-lg whitespace-nowrap"
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm font-medium disabled:opacity-50 transition-colors"
                 >
-                  {isJoining ? 'Joining...' : 'Join Class'}
+                  Join
                 </button>
               </form>
             </div>
             
-            {error && <p className="text-red-400 mb-6 bg-red-400/10 px-4 py-3 rounded-lg border border-red-400/20">{error}</p>}
-            {success && <p className="text-green-400 mb-6 bg-green-400/10 px-4 py-3 rounded-lg border border-green-400/20">{success}</p>}
+            {error && <p className="text-red-600 mb-6 bg-red-50 px-4 py-3 rounded-lg border border-red-200 text-sm">{error}</p>}
+            {success && <p className="text-green-600 mb-6 bg-green-50 px-4 py-3 rounded-lg border border-green-200 text-sm">{success}</p>}
 
             {classrooms.length === 0 ? (
-              <p className="text-gray-400 bg-black/20 p-6 rounded-xl border border-white/5 text-center">You are not enrolled in any classrooms yet. Use a join code above to get started!</p>
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">You are not enrolled in any classrooms.</p>
+                <p className="text-gray-400 mt-2">Enter a class code above to join one.</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
-                {classrooms.map(c => (
-                  <Link to={`/classrooms/${c.id}`} key={c.id} className="block bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-6 relative overflow-hidden group hover:border-blue-500/50 hover:shadow-blue-500/20 hover:shadow-xl transition-all h-full flex flex-col">
-                    <h4 className="text-xl font-bold mb-2 text-white group-hover:text-blue-300 transition-colors">{c.name}</h4>
-                    <p className="text-gray-300 text-sm mb-4 line-clamp-3 flex-grow">{c.description || 'No description provided.'}</p>
-                    <div className="absolute top-[-20px] right-[-20px] text-8xl opacity-5 group-hover:opacity-10 transition-all transform group-hover:scale-110 group-hover:rotate-12 duration-500">
-                      🎓
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {classrooms.map((c, idx) => {
+                  const bannerColor = BANNER_COLORS[idx % BANNER_COLORS.length];
+                  // Determine an avatar letter
+                  const avatarLetter = c.description ? c.description.charAt(0).toUpperCase() : c.name.charAt(0).toUpperCase();
+
+                  return (
+                    <div key={c.id} className="h-[280px] border border-gray-300 rounded-lg overflow-hidden flex flex-col hover:shadow-md transition-shadow relative bg-white group">
+                      
+                      {/* Top Banner Half */}
+                      <Link to={`/classrooms/${c.id}`} className={`h-28 p-4 block ${bannerColor} relative group-hover:opacity-95 transition-opacity`}>
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-white text-[22px] font-medium truncate w-[90%] tracking-tight hover:underline">
+                            {c.name}
+                          </h4>
+                          <button className="text-white/80 hover:text-white mt-1">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className="text-white/90 text-sm truncate mt-1">{c.description || 'No section'}</p>
+                      </Link>
+
+                      {/* Floating Avatar */}
+                      <div className="absolute top-[84px] right-4 w-[72px] h-[72px] rounded-full bg-orange-600 border-[4px] border-white flex items-center justify-center shadow-sm overflow-hidden z-10">
+                        <span className="text-white text-3xl font-normal">{avatarLetter}</span>
+                      </div>
+
+                      {/* Body Half */}
+                      <Link to={`/classrooms/${c.id}`} className="flex-1 p-4 pt-10 block">
+                        {/* If we had specific pending assignments for THIS class, show here */}
+                        <div className="text-sm text-gray-500">
+                          {pendingAssignments.filter(a => a.classroom_id === c.id).length > 0 
+                            ? `Due soon: ${pendingAssignments.filter(a => a.classroom_id === c.id)[0].title}`
+                            : 'No due work soon'}
+                        </div>
+                      </Link>
+
+                      {/* Footer Actions */}
+                      <div className="h-12 border-t border-gray-200 flex items-center justify-end px-2 gap-1 bg-white">
+                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Your Work">
+                          <ClipboardList size={20} strokeWidth={1.5} />
+                        </button>
+                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Folder">
+                          <Folder size={20} strokeWidth={1.5} />
+                        </button>
+                      </div>
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
-        {activeTab === 'calendar' && (
-          <CalendarView />
-        )}
-
-        {activeTab === 'timetable' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <TimetableView />
-          </div>
-        )}
-        
-        {activeTab === 'performance' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <MyPerformance />
-          </div>
-        )}
-
-        {activeTab === 'predictor' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <MarkPredictor />
-          </div>
-        )}
-
-        {activeTab === 'history' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <PastResults />
-          </div>
-        )}
+        {activeTab === 'calendar' && <CalendarView />}
+        {activeTab === 'timetable' && <TimetableView />}
+        {activeTab === 'performance' && <MyPerformance />}
+        {activeTab === 'predictor' && <MarkPredictor />}
+        {activeTab === 'history' && <PastResults />}
       </div>
     </div>
   );

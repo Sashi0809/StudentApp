@@ -24,7 +24,19 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOC/DOCX, and images are allowed.'));
+    }
+  }
+});
 
 const verifyClassroomAccess = async (userId: string, role: string, classroomId: string) => {
   if (role === 'TEACHER') {
@@ -68,6 +80,9 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
 
   if (user.role !== 'TEACHER') {
     return res.status(403).json({ error: 'Only teachers can create classrooms' });
+  }
+  if (user.approval_status !== 'APPROVED') {
+    return res.status(403).json({ error: 'Your account is pending approval.' });
   }
 
   const { name, description } = req.body;
@@ -183,6 +198,7 @@ router.post('/:id/assignments', authenticate, upload.single('file'), async (req:
 
   console.log('User attempting to upload assignment:', user.role, user);
   if (user.role !== 'TEACHER') return res.status(403).json({ error: 'Only teachers can upload assignments' });
+  if (user.approval_status !== 'APPROVED') return res.status(403).json({ error: 'Your account is pending approval.' });
   if (!title || !deadline) return res.status(400).json({ error: 'Title and deadline are required' });
 
   try {

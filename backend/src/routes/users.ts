@@ -86,4 +86,26 @@ router.patch('/teachers/:id/status', authenticate, async (req: AuthRequest, res)
   }
 });
 
+router.get('/me/assignments', authenticate, async (req: AuthRequest, res) => {
+  const user = req.user;
+  if (!user || user.role !== 'STUDENT') return res.status(403).json({ error: 'Only students can view their assignments' });
+
+  try {
+    const dbRes = await query(`
+      SELECT a.*, c.name as classroom_name
+      FROM classroom_assignments a
+      JOIN enrollments e ON a.classroom_id = e.classroom_id
+      JOIN classrooms c ON a.classroom_id = c.id
+      WHERE e.student_id = $1 
+        AND a.deadline > CURRENT_TIMESTAMP
+        AND a.id NOT IN (SELECT assignment_id FROM assignment_submissions WHERE student_id = $1)
+      ORDER BY a.deadline ASC
+    `, [user.id]);
+    return res.json(dbRes.rows);
+  } catch (error) {
+    console.error('Fetch student assignments error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

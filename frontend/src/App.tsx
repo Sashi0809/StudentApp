@@ -5,18 +5,18 @@ import Dashboard from './pages/Dashboard';
 import ClassroomDetail from './pages/ClassroomDetail';
 
 function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/classrooms/:id" element={<ClassroomDetail />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
+ return (
+ <AuthProvider>
+ <Router>
+ <Routes>
+ <Route path="/login" element={<Login />} />
+ <Route path="/dashboard" element={<Dashboard />} />
+ <Route path="/classrooms/:id" element={<ClassroomDetail />} />
+ <Route path="/" element={<Navigate to="/dashboard" replace />} />
+ </Routes>
+ </Router>
+ </AuthProvider>
+ );
 }
 
 export default App;

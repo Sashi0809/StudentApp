@@ -21,7 +21,7 @@ export default function Dashboard() {
   }, [user]);
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Loading...</div>;
+    return <div className="min-h-screen bg-white flex items-center justify-center text-gray-900">Loading...</div>;
   }
 
   if (!user) {
@@ -35,36 +35,68 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-6xl mx-auto backdrop-blur-xl bg-white/10 rounded-2xl shadow-xl border border-white/20 p-8 mt-10">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Welcome, {user.name}!</h1>
-            <p className="text-gray-300 mb-2">Email: {user.email}</p>
-            <div className="flex items-center gap-3 text-gray-300">
-              <p>Role: <span className="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/50 rounded-full font-semibold text-sm">{user.role}</span></p>
-              {departmentName && (
-                <p>Branch: <span className="px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/50 rounded-full font-semibold text-sm">{departmentName}</span></p>
-              )}
-              {user.role === 'STUDENT' && user.academic_year && (
-                <p>Year: <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 rounded-full font-semibold text-sm">Year {user.academic_year}</span></p>
-              )}
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans">
+      {/* Top Navbar */}
+      <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 bg-white z-50">
+        <div className="flex items-center gap-6">
+          <button className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
+            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div className="text-[22px] font-medium text-gray-600 hover:text-gray-900 transition-colors cursor-pointer tracking-tight">
+            Classroom
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-2">
+            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-semibold text-xs tracking-wide">{user.role}</span>
+            {departmentName && <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold text-xs tracking-wide">{departmentName}</span>}
+          </div>
+          
+          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+
+          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+
+          <div className="relative group cursor-pointer">
+            <div className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-medium text-sm border-2 border-white shadow-sm ring-1 ring-gray-200">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            
+            {/* Simple dropdown for logout */}
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+              <div className="p-4 border-b border-gray-100">
+                <p className="font-medium text-gray-900 truncate">{user.name}</p>
+                <p className="text-sm text-gray-500 truncate">{user.email}</p>
+              </div>
+              <div className="p-2">
+                <button 
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors font-medium"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors font-medium shadow-lg"
-          >
-            Sign Out
-          </button>
         </div>
+      </header>
 
-        <div className="border-t border-white/10 pt-4">
-          {user.role === 'TEACHER' && <TeacherDashboard />}
-          {user.role === 'STUDENT' && <StudentDashboard />}
-          {user.role === 'HOD' && <HodDashboard />}
-        </div>
-      </div>
+      {/* Main Content Area */}
+      <main className="flex-1 flex overflow-hidden">
+        {user.role === 'TEACHER' && <TeacherDashboard />}
+        {user.role === 'STUDENT' && <StudentDashboard />}
+        {user.role === 'HOD' && <HodDashboard />}
+      </main>
     </div>
   );
 }

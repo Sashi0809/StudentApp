@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Key, BookOpen } from 'lucide-react';
+import { Key, BookOpen, Clock, Activity, MessageSquare, Folder, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
@@ -15,28 +15,20 @@ type Classroom = {
   created_at: string;
 };
 
+const BANNER_COLORS = [
+  'bg-blue-600',
+  'bg-purple-700',
+  'bg-emerald-600',
+  'bg-orange-600',
+  'bg-teal-700',
+  'bg-indigo-600'
+];
+
 export default function TeacherDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'classes' | 'timetable' | 'performance' | 'messages'>('classes');
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
-
-  if (user?.approval_status === 'PENDING') {
-    return (
-      <div className="mt-8 bg-black/40 border border-yellow-500/30 rounded-xl p-8 text-center max-w-2xl mx-auto shadow-2xl backdrop-blur-md">
-        <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Key className="text-yellow-400 w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-bold text-yellow-100 mb-4">Account Pending Approval</h2>
-        <p className="text-gray-300 text-lg leading-relaxed">
-          Your registration as a teacher for the subject <span className="font-semibold text-yellow-400">{user.subject}</span> has been received. 
-        </p>
-        <p className="text-gray-400 mt-4">
-          Please wait for your Head of Department (HOD) to review and approve your account before you can start managing classrooms.
-        </p>
-      </div>
-    );
-  }
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -55,8 +47,12 @@ export default function TeacherDashboard() {
   };
 
   useEffect(() => {
-    fetchClassrooms();
-  }, []);
+    if (user?.approval_status !== 'PENDING') {
+      fetchClassrooms();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,144 +70,186 @@ export default function TeacherDashboard() {
     }
   };
 
-  if (loading) return <div className="mt-8 text-gray-300">Loading your classrooms...</div>;
+  if (loading) return <div className="p-8 text-gray-700 font-medium">Loading your classrooms...</div>;
+
+  if (user?.approval_status === 'PENDING') {
+    return (
+      <div className="w-full flex items-center justify-center p-8 bg-gray-50 h-[calc(100vh-64px)]">
+        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center max-w-lg shadow-sm">
+          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Key className="text-yellow-600 w-10 h-10" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Account Pending Approval</h2>
+          <p className="text-gray-600 text-lg leading-relaxed mb-6">
+            Your registration as a teacher for the subject <span className="font-semibold text-gray-900">{user.subject}</span> has been received. 
+          </p>
+          <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm">
+            Please wait for your Head of Department (HOD) to review and approve your account before you can start managing classrooms.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-8 space-y-8">
-      <h2 className="text-2xl font-semibold mb-4 text-purple-100">Teacher Dashboard</h2>
-      
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Navigation Sidebar */}
-        <div className="w-full md:w-64 space-y-2">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] w-full">
+      {/* Sidebar */}
+      <div className="w-full md:w-72 flex-shrink-0 bg-white border-r border-gray-200 h-full overflow-y-auto py-3 pr-4">
+        <div className="flex flex-col gap-1">
           <button
             onClick={() => setActiveTab('classes')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'classes' 
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' 
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium' 
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <BookOpen size={20} />
-            <span className="font-medium">Classrooms</span>
+            <BookOpen size={20} className={activeTab === 'classes' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Classrooms</span>
           </button>
+          
+          <div className="my-2 border-t border-gray-200 ml-6"></div>
+          <div className="px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Management</div>
+
           <button
             onClick={() => setActiveTab('timetable')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'timetable'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span className="font-medium">Timetable</span>
+            <Clock size={20} className={activeTab === 'timetable' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Timetable</span>
           </button>
+
           <button
             onClick={() => setActiveTab('performance')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'performance'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            <span className="font-medium">Upload Marks</span>
+            <TrendingUp size={20} className={activeTab === 'performance' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Upload Marks</span>
           </button>
+          
           <button
             onClick={() => setActiveTab('messages')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
               activeTab === 'messages'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-            <span className="font-medium">Messages</span>
+            <MessageSquare size={20} className={activeTab === 'messages' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Messages</span>
           </button>
         </div>
+      </div>
 
-        {/* Content Area */}
-        <div className="flex-1 min-w-0">
-          {activeTab === 'classes' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-8">
-                <h3 className="text-xl mb-4 text-purple-300">Create New Classroom</h3>
-                {error && <p className="text-red-400 mb-4">{error}</p>}
-                <form onSubmit={handleCreate} className="space-y-4 max-w-md">
-                  <div>
-                    <label className="block text-sm mb-1 text-gray-300">Classroom Name</label>
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto bg-white p-6 md:p-8">
+        {activeTab === 'classes' && (
+          <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
+            
+            <div className="mb-8 flex justify-end">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 w-full md:w-auto md:min-w-[400px]">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Create New Classroom</h3>
+                <form onSubmit={handleCreate} className="flex flex-col gap-2">
+                  <div className="flex gap-2">
                     <input 
                       required
                       type="text" 
                       value={name}
                       onChange={e => setName(e.target.value)}
-                      className="w-full bg-black/30 border border-white/20 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors"
-                      placeholder="e.g. Physics 101"
+                      className="flex-1 bg-white border border-gray-300 rounded px-3 py-1.5 text-gray-900 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                      placeholder="Classroom Name (e.g. Physics 101)"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm mb-1 text-gray-300">Description (optional)</label>
+                  <div className="flex gap-2">
                     <input 
                       type="text" 
                       value={description}
                       onChange={e => setDescription(e.target.value)}
-                      className="w-full bg-black/30 border border-white/20 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors"
-                      placeholder="e.g. Advanced mechanics"
+                      className="flex-1 bg-white border border-gray-300 rounded px-3 py-1.5 text-gray-900 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                      placeholder="Section / Description (Optional)"
                     />
+                    <button 
+                      type="submit" 
+                      disabled={isCreating}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {isCreating ? 'Creating...' : 'Create'}
+                    </button>
                   </div>
-                  <button 
-                    type="submit" 
-                    disabled={isCreating}
-                    className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-white font-medium transition-colors shadow-lg disabled:opacity-50"
-                  >
-                    {isCreating ? 'Creating...' : 'Create Classroom'}
-                  </button>
+                  {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
                 </form>
               </div>
+            </div>
 
-              <h3 className="text-xl mb-4 text-purple-100">Your Classrooms</h3>
-              {classrooms.length === 0 ? (
-                <p className="text-gray-400 bg-black/20 p-4 rounded-lg border border-white/5">You haven't created any classrooms yet.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                  {classrooms.map(c => (
-                    <Link to={`/classrooms/${c.id}`} key={c.id} className="block bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-6 relative overflow-hidden group hover:border-purple-500/50 hover:shadow-purple-500/20 hover:shadow-xl transition-all">
-                      <h4 className="text-xl font-bold mb-2 text-white">{c.name}</h4>
-                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">{c.description || 'No description provided.'}</p>
-                      <div className="bg-black/40 rounded-lg px-4 py-3 flex items-center justify-between border border-white/10">
-                        <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Join Code</span>
-                        <span className="font-mono text-purple-300 font-bold tracking-widest text-lg bg-purple-500/10 px-2 py-1 rounded">{c.join_code}</span>
+            {classrooms.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">You haven't created any classrooms yet.</p>
+                <p className="text-gray-400 mt-2">Use the form above to create your first class.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {classrooms.map((c, idx) => {
+                  const bannerColor = BANNER_COLORS[idx % BANNER_COLORS.length];
+                  const avatarLetter = user.name.charAt(0).toUpperCase();
+
+                  return (
+                    <div key={c.id} className="h-[280px] border border-gray-300 rounded-lg overflow-hidden flex flex-col hover:shadow-md transition-shadow relative bg-white group">
+                      
+                      {/* Top Banner Half */}
+                      <Link to={`/classrooms/${c.id}`} className={`h-28 p-4 block ${bannerColor} relative group-hover:opacity-95 transition-opacity`}>
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-white text-[22px] font-medium truncate w-[90%] tracking-tight hover:underline">
+                            {c.name}
+                          </h4>
+                          <button className="text-white/80 hover:text-white mt-1">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className="text-white/90 text-sm truncate mt-1">{c.description || 'No section'}</p>
+                      </Link>
+
+                      {/* Floating Avatar */}
+                      <div className="absolute top-[84px] right-4 w-[72px] h-[72px] rounded-full bg-orange-600 border-[4px] border-white flex items-center justify-center shadow-sm overflow-hidden z-10">
+                        <span className="text-white text-3xl font-normal">{avatarLetter}</span>
                       </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
-          {activeTab === 'timetable' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <TimetableView />
-            </div>
-          )}
+                      {/* Body Half */}
+                      <Link to={`/classrooms/${c.id}`} className="flex-1 p-4 pt-10 block">
+                        <div className="text-sm text-gray-500">
+                          <span className="font-semibold text-gray-700">Class Code:</span> <span className="font-mono tracking-widest">{c.join_code}</span>
+                        </div>
+                      </Link>
 
-          {activeTab === 'performance' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <PerformanceEntry />
-            </div>
-          )}
+                      {/* Footer Actions */}
+                      <div className="h-12 border-t border-gray-200 flex items-center justify-end px-2 gap-1 bg-white">
+                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Gradebook">
+                          <TrendingUp size={20} strokeWidth={1.5} />
+                        </button>
+                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Folder">
+                          <Folder size={20} strokeWidth={1.5} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
-          {activeTab === 'messages' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <StudentMessages />
-            </div>
-          )}
-        </div>
+        {activeTab === 'timetable' && <TimetableView />}
+        {activeTab === 'performance' && <PerformanceEntry />}
+        {activeTab === 'messages' && <StudentMessages />}
       </div>
     </div>
   );
