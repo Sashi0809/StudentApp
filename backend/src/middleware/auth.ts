@@ -9,6 +9,7 @@ export interface AuthRequest extends Request {
     email?: string;
     department_id?: string;
     academic_year?: number;
+    subject?: string;
   };
 }
 

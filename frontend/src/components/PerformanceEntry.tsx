@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Activity, Save, Share2 } from 'lucide-react';
+import { Activity, Save } from 'lucide-react';
 import api from '../lib/axios';
 
 export default function PerformanceEntry() {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -11,22 +12,46 @@ export default function PerformanceEntry() {
   
   const [formData, setFormData] = useState({
     attendance: '',
-    assignment_avg: '',
-    mid_marks: '',
-    internal_marks: '',
-    subject: 'CSE101'
+    mid_sem_1: '',
+    mid_sem_2: '',
+    end_sem_marks: '',
+    internal_marks: ''
   });
 
-  const [prediction, setPrediction] = useState<any>(null);
+  const [performances, setPerformances] = useState<any[]>([]);
+
+  const handleEdit = (p: any) => {
+    setSelectedStudent(p.student_id);
+    setFormData({
+      attendance: p.attendance?.toString() || '',
+      mid_sem_1: p.mid_sem_1?.toString() || '',
+      mid_sem_2: p.mid_sem_2?.toString() || '',
+      end_sem_marks: p.end_sem_marks?.toString() || '',
+      internal_marks: p.internal_marks?.toString() || ''
+    });
+  };
+
+  const availableStudents = students.filter(s => 
+    s.id === selectedStudent || !performances.some(p => p.student_id === s.id)
+  );
+
+  const fetchData = async () => {
+    try {
+      const [studentsRes, perfRes] = await Promise.all([
+        api.get('/users/students'),
+        api.get('/performance')
+      ]);
+      setStudents(studentsRes.data);
+      setPerformances(perfRes.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api.get('/users/students').then(res => {
-      setStudents(res.data);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+    fetchData();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,26 +61,18 @@ export default function PerformanceEntry() {
     setMessage('');
     
     try {
-      const res = await api.post('/performance', {
+      await api.post('/performance', {
         student_id: selectedStudent,
         ...formData
       });
-      setPrediction(res.data);
-      setMessage('Performance saved and predicted successfully!');
+      setMessage('Performance saved successfully!');
+      setFormData({ attendance: '', mid_sem_1: '', mid_sem_2: '', end_sem_marks: '', internal_marks: '' });
+      setSelectedStudent('');
+      fetchData();
     } catch (err: any) {
       setMessage(err.response?.data?.error || 'Failed to save performance');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleShare = async () => {
-    if (!prediction?.id) return;
-    try {
-      await api.post(`/performance/${prediction.id}/share`);
-      setMessage('Performance data shared with student and HOD!');
-    } catch (err) {
-      setMessage('Failed to share data');
     }
   };
 
@@ -64,7 +81,7 @@ export default function PerformanceEntry() {
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-6">
       <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-        <Activity className="text-blue-400" /> Student Performance Entry (ML Prediction)
+        <Activity className="text-blue-400" /> Upload Marks
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -79,9 +96,14 @@ export default function PerformanceEntry() {
                 className="w-full bg-black/30 border border-white/20 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="">-- Choose Student --</option>
-                {students.map(s => (
+                {availableStudents.map(s => (
                   <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
                 ))}
+                {!availableStudents.some(s => s.id === selectedStudent) && selectedStudent && (
+                  <option value={selectedStudent}>
+                    {performances.find(p => p.student_id === selectedStudent)?.student_name || 'Unknown Student'}
+                  </option>
+                )}
               </select>
             </div>
 
@@ -99,55 +121,54 @@ export default function PerformanceEntry() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Assignment Avg (Max 10)</label>
+                <label className="block text-sm text-gray-400 mb-2">Mid Sem 1 (Max 15)</label>
                 <input
                   type="number"
-                  required
-                  min="0" max="10"
-                  value={formData.assignment_avg}
-                  onChange={e => setFormData({...formData, assignment_avg: e.target.value})}
+                  min="0" max="15"
+                  value={formData.mid_sem_1}
+                  onChange={e => setFormData({...formData, mid_sem_1: e.target.value})}
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Mid Marks (Max 30)</label>
+                <label className="block text-sm text-gray-400 mb-2">Mid Sem 2 (Max 15)</label>
                 <input
                   type="number"
-                  required
-                  min="0" max="30"
-                  value={formData.mid_marks}
-                  onChange={e => setFormData({...formData, mid_marks: e.target.value})}
+                  min="0" max="15"
+                  value={formData.mid_sem_2}
+                  onChange={e => setFormData({...formData, mid_sem_2: e.target.value})}
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Internal Marks (Max 10)</label>
+                <label className="block text-sm text-gray-400 mb-2">Assignment (Max 20)</label>
                 <input
                   type="number"
                   required
-                  min="0" max="10"
+                  min="0" max="20"
                   value={formData.internal_marks}
                   onChange={e => setFormData({...formData, internal_marks: e.target.value})}
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">End Sem (Max 50)</label>
+                <input
+                  type="number"
+                  min="0" max="50"
+                  value={formData.end_sem_marks}
+                  onChange={e => setFormData({...formData, end_sem_marks: e.target.value})}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
               <div className="col-span-2">
-                <label className="block text-sm text-gray-300 mb-1">Subject</label>
-                <select
-                  required
-                  value={formData.subject}
-                  onChange={e => setFormData({...formData, subject: e.target.value})}
-                  className="w-full bg-black/30 border border-white/20 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="CSE101">CSE101</option>
-                  <option value="CSE102">CSE102</option>
-                  <option value="CSE201">CSE201</option>
-                  <option value="CSE202">CSE202</option>
-                  <option value="CSE301">CSE301</option>
-                  <option value="CSE302">CSE302</option>
-                  <option value="CSE303">CSE303</option>
-                  <option value="CSE401">CSE401</option>
-                </select>
+                <label className="block text-sm text-gray-300 mb-1">Subject (Auto-Assigned)</label>
+                <input
+                  type="text"
+                  disabled
+                  value={user.subject || 'Not Set'}
+                  className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-gray-400 cursor-not-allowed"
+                />
               </div>
             </div>
 
@@ -156,39 +177,47 @@ export default function PerformanceEntry() {
               disabled={saving || !selectedStudent}
               className="mt-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
             >
-              <Save size={18} /> {saving ? 'Predicting...' : 'Save & Predict'}
+              <Save size={18} /> {saving ? 'Saving...' : (performances.some(p => p.student_id === selectedStudent) ? 'Update Marks' : 'Upload Marks')}
             </button>
             {message && <p className="text-sm text-blue-300 mt-2">{message}</p>}
           </form>
         </div>
 
         <div>
-          {prediction && (
-            <div className="bg-black/40 border border-blue-500/30 rounded-xl p-6">
-              <h4 className="text-lg font-semibold text-white mb-4">ML Prediction Results</h4>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-gray-300">Passing Probability</span>
-                <span className={`text-3xl font-bold ${prediction.predicted_pass_percentage < 50 ? 'text-red-400' : prediction.predicted_pass_percentage < 75 ? 'text-yellow-400' : 'text-green-400'}`}>
-                  {prediction.predicted_pass_percentage}%
-                </span>
-              </div>
-              
-              <div className="text-sm text-gray-400 mb-6">
-                Based on attendance ({prediction.attendance}%), assignment average ({prediction.assignment_avg}), mid marks ({prediction.mid_marks}), internal marks ({prediction.internal_marks}), and calculated subject difficulty ({prediction.subject_difficulty}).
-              </div>
-
-              {!prediction.shared_at ? (
-                <button
-                  onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Share2 size={18} /> Share with Student & HOD
-                </button>
-              ) : (
-                <div className="text-center p-2 bg-green-500/20 text-green-400 rounded-lg border border-green-500/30 text-sm font-medium">
-                  Shared on {new Date(prediction.shared_at).toLocaleString()}
+          <h3 className="text-xl font-semibold text-white mb-4">Uploaded Marks</h3>
+          {performances.length === 0 ? (
+            <p className="text-gray-400 bg-black/20 p-4 rounded-lg border border-white/5 text-sm">No marks uploaded yet.</p>
+          ) : (
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {performances.map(p => (
+                <div key={p.id} className="bg-black/30 border border-white/10 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="text-white font-medium">{p.student_name}</h4>
+                      <p className="text-xs text-gray-400">Semester: {p.semester_name || 'Active'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {p.shared_at && (
+                        <span className="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">Visible to Student</span>
+                      )}
+                      <button
+                        onClick={() => handleEdit(p)}
+                        className="text-xs text-blue-400 hover:bg-blue-400/10 px-2 py-1 rounded border border-blue-400/30 transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
+                    <div>Attendance: <span className="text-white">{p.attendance}%</span></div>
+                    <div>Assignment: <span className="text-white">{p.internal_marks} / 20</span></div>
+                    <div>Mid 1: <span className="text-white">{p.mid_sem_1} / 15</span></div>
+                    <div>Mid 2: <span className="text-white">{p.mid_sem_2} / 15</span></div>
+                    <div>End Sem: <span className="text-white">{p.end_sem_marks} / 50</span></div>
+                    <div>Total: <span className="text-purple-300 font-bold">{p.final_score}</span></div>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>

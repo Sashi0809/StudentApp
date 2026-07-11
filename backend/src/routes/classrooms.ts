@@ -181,6 +181,7 @@ router.post('/:id/assignments', authenticate, upload.single('file'), async (req:
   const { title, description, deadline } = req.body;
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
+  console.log('User attempting to upload assignment:', user.role, user);
   if (user.role !== 'TEACHER') return res.status(403).json({ error: 'Only teachers can upload assignments' });
   if (!title || !deadline) return res.status(400).json({ error: 'Title and deadline are required' });
 

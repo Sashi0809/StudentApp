@@ -1,75 +1,75 @@
 import pandas as pd
-import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import r2_score
 import joblib
 import os
 
 def main():
-    print("--- Rescaling Data and Retraining Model ---")
+    print("--- Training Chained ML Models ---")
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    original_excel = 'C:/Users/sashi/studentModel/dataset/student_performance_with_predictions.xlsx'
     historical_csv = os.path.join(script_dir, 'historical_data.csv')
-    model_path = os.path.join(script_dir, 'student_pass_model.pkl')
     
-    print(f"Loading original dataset from {original_excel}...")
+    print(f"Loading dataset from {historical_csv}...")
     try:
-        df = pd.read_excel(original_excel)
+        df = pd.read_csv(historical_csv)
     except Exception as e:
-        print(f"Failed to load excel: {e}")
+        print(f"Failed to load csv: {e}")
         return
         
-    print(f"Original dataset shape: {df.shape}")
-
-    # Scale the columns
-    print("Rescaling columns to new rubric...")
-    # Assignment: 100 -> 10
-    df['assignment_avg'] = (df['assignment_avg'] / 10).round(1)
+    print(f"Dataset shape: {df.shape}")
     
-    # Internal Marks: 30 -> 10
-    df['internal_marks'] = (df['internal_marks'] / 3).round(1)
+    df = df.dropna()
     
-    # Mid Marks: keep out of 30
-    df['mid_marks'] = df['mid_marks'].round(1)
+    # 1. Model for Mid Sem 1
+    features_mid1 = ['attendance', 'previous_cgpa', 'subject_difficulty']
+    target_mid1 = 'mid_sem_1'
+    X1 = df[features_mid1]
+    y1 = df[target_mid1]
     
-    # Ensure missing previous_cgpa is imputed with median just in case
-    if 'previous_cgpa' in df.columns:
-        df['previous_cgpa'] = df['previous_cgpa'].fillna(df['previous_cgpa'].median())
-    else:
-        print("previous_cgpa not found in columns. Simulating a random column for training.")
-        df['previous_cgpa'] = np.random.uniform(5.0, 10.0, len(df)).round(1)
-    
-    features = ['attendance', 'assignment_avg', 'mid_marks', 'internal_marks', 'subject_difficulty', 'previous_cgpa']
-    target = 'passed'
-    
-    df = df.dropna(subset=features + [target])
-    
-    # Save the new rescaled dataset as historical_data.csv
-    df.to_csv(historical_csv, index=False)
-    print(f"Saved rescaled dataset to {historical_csv}")
-    
-    # Retrain Model
-    X = df[features]
-    y = df[target]
-    
-    model = Pipeline([
+    model_mid1 = Pipeline([
         ('scaler', StandardScaler()),
-        ('knn', KNeighborsClassifier(n_neighbors=7))
+        ('rf', RandomForestRegressor(n_estimators=100, random_state=42))
     ])
+    model_mid1.fit(X1, y1)
     
-    print("Training KNN Classifier on rescaled data...")
-    model.fit(X, y)
+    # 2. Model for Mid Sem 2
+    features_mid2 = ['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1']
+    target_mid2 = 'mid_sem_2'
+    X2 = df[features_mid2]
+    y2 = df[target_mid2]
     
-    y_pred = model.predict(X)
-    print(f"Accuracy on training set: {accuracy_score(y, y_pred):.4f}")
+    model_mid2 = Pipeline([
+        ('scaler', StandardScaler()),
+        ('rf', RandomForestRegressor(n_estimators=100, random_state=42))
+    ])
+    model_mid2.fit(X2, y2)
     
-    # Save Model
-    joblib.dump(model, model_path)
-    print(f"Model saved to {model_path}")
+    # 3. Model for End Sem
+    features_end = ['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1', 'mid_sem_2', 'internal_marks']
+    target_end = 'end_sem_marks'
+    X3 = df[features_end]
+    y3 = df[target_end]
     
+    model_end = Pipeline([
+        ('scaler', StandardScaler()),
+        ('rf', RandomForestRegressor(n_estimators=100, random_state=42))
+    ])
+    model_end.fit(X3, y3)
+    
+    # Save Models
+    joblib.dump(model_mid1, os.path.join(script_dir, 'model_mid1.pkl'))
+    joblib.dump(model_mid2, os.path.join(script_dir, 'model_mid2.pkl'))
+    joblib.dump(model_end, os.path.join(script_dir, 'model_end.pkl'))
+    
+    print("Saved model_mid1.pkl, model_mid2.pkl, model_end.pkl")
+    
+    # Evaluate
+    print(f"Mid 1 R2: {r2_score(y1, model_mid1.predict(X1)):.2f}")
+    print(f"Mid 2 R2: {r2_score(y2, model_mid2.predict(X2)):.2f}")
+    print(f"End Sem R2: {r2_score(y3, model_end.predict(X3)):.2f}")
     print("Done!")
 
 if __name__ == '__main__':

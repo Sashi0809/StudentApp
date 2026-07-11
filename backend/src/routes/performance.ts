@@ -49,9 +49,10 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
   const { user } = req;
   if (user.role !== 'TEACHER') return res.status(403).json({ error: 'Unauthorized' });
 
-  const { student_id, attendance, assignment_avg, mid_marks, internal_marks, subject } = req.body;
-  if (!student_id || attendance == null || assignment_avg == null || mid_marks == null || internal_marks == null || !subject) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  const { student_id, attendance, mid_sem_1, mid_sem_2, internal_marks, end_sem_marks } = req.body;
+  const subject = user.subject;
+  if (!student_id || attendance == null || !subject) {
+    return res.status(400).json({ error: 'Missing required fields or teacher subject not set' });
   }
 
   // Map subject to difficulty
@@ -66,6 +67,12 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
     console.error('Could not load subject difficulties:', err);
   }
 
+  const m1 = mid_sem_1 ? Number(mid_sem_1) : 0;
+  const m2 = mid_sem_2 ? Number(mid_sem_2) : 0;
+  const intM = internal_marks ? Number(internal_marks) : 0;
+  const endM = end_sem_marks ? Number(end_sem_marks) : 0;
+  const final_score = m1 + m2 + intM + endM;
+
   try {
     // Get active semester
     const semRes = await query('SELECT id FROM semesters WHERE is_active = true LIMIT 1');
@@ -74,44 +81,23 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
     }
     const semester_id = semRes.rows[0].id;
 
-    // Get student's previous CGPA
-    const cgpaRes = await query('SELECT cgpa FROM cgpa_records WHERE student_id = $1', [student_id]);
-    const previous_cgpa = cgpaRes.rowCount > 0 ? cgpaRes.rows[0].cgpa : 0;
-
-    // Call Python ML script
-    const inputData = {
-      attendance: Number(attendance),
-      assignment_avg: Number(assignment_avg),
-      mid_marks: Number(mid_marks),
-      internal_marks: Number(internal_marks),
-      subject_difficulty: Number(subject_difficulty),
-      previous_cgpa: Number(previous_cgpa)
-    };
-    
-    let predicted_pass_percentage = null;
-    try {
-      predicted_pass_percentage = await runPrediction(inputData);
-    } catch (mlErr: any) {
-      console.error('ML Prediction Error:', mlErr);
-      return res.status(500).json({ error: 'Failed to run ML prediction', details: mlErr.message });
-    }
-
-    // Save to DB
+    // Save to DB (assignment_avg set to 0 as we no longer use it)
     const insertRes = await query(`
-      INSERT INTO student_performance (student_id, teacher_id, semester_id, attendance, assignment_avg, mid_marks, internal_marks, subject_difficulty, previous_cgpa, predicted_pass_percentage, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+      INSERT INTO student_performance (student_id, teacher_id, semester_id, attendance, assignment_avg, internal_marks, subject_difficulty, mid_sem_1, mid_sem_2, end_sem_marks, final_score, updated_at, shared_at)
+      VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (student_id, teacher_id, semester_id) 
       DO UPDATE SET 
         attendance = EXCLUDED.attendance,
-        assignment_avg = EXCLUDED.assignment_avg,
-        mid_marks = EXCLUDED.mid_marks,
         internal_marks = EXCLUDED.internal_marks,
         subject_difficulty = EXCLUDED.subject_difficulty,
-        previous_cgpa = EXCLUDED.previous_cgpa,
-        predicted_pass_percentage = EXCLUDED.predicted_pass_percentage,
-        updated_at = CURRENT_TIMESTAMP
+        mid_sem_1 = EXCLUDED.mid_sem_1,
+        mid_sem_2 = EXCLUDED.mid_sem_2,
+        end_sem_marks = EXCLUDED.end_sem_marks,
+        final_score = EXCLUDED.final_score,
+        updated_at = CURRENT_TIMESTAMP,
+        shared_at = CURRENT_TIMESTAMP
       RETURNING *
-    `, [student_id, user.id, semester_id, attendance, assignment_avg, mid_marks, internal_marks, subject_difficulty, previous_cgpa, predicted_pass_percentage]);
+    `, [student_id, user.id, semester_id, attendance, intM, subject_difficulty, m1, m2, endM, final_score]);
 
     res.json(insertRes.rows[0]);
   } catch (err: any) {
@@ -171,7 +157,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 
     if (user.role === 'STUDENT') {
       const q = `
-        SELECT sp.*, u.name as teacher_name, sem.name as semester_name 
+        SELECT sp.*, u.name as teacher_name, u.subject as subject, sem.name as semester_name 
         FROM student_performance sp
         JOIN users u ON sp.teacher_id = u.id
         LEFT JOIN semesters sem ON sp.semester_id = sem.id
@@ -181,7 +167,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       return res.json(dbRes.rows);
     } else if (user.role === 'HOD') {
       const q = `
-        SELECT sp.*, s.name as student_name, t.name as teacher_name, sem.name as semester_name 
+        SELECT sp.*, s.name as student_name, t.name as teacher_name, t.subject as subject, sem.name as semester_name 
         FROM student_performance sp
         JOIN users s ON sp.student_id = s.id
         JOIN users t ON sp.teacher_id = t.id
@@ -202,6 +188,95 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       return res.json(dbRes.rows);
     }
   } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get student's past semester performance history
+router.get('/history', authenticate, async (req: AuthRequest, res) => {
+  const { user } = req;
+  if (user.role !== 'STUDENT') return res.status(403).json({ error: 'Unauthorized' });
+
+  try {
+    const q = `
+      SELECT sp.*, u.name as teacher_name, u.subject as subject, sem.name as semester_name, sem.start_date, sem.end_date
+      FROM student_performance sp
+      JOIN users u ON sp.teacher_id = u.id
+      JOIN semesters sem ON sp.semester_id = sem.id
+      WHERE sp.student_id = $1 AND sp.shared_at IS NOT NULL AND sem.is_active = false
+      ORDER BY sem.start_date DESC
+    `;
+    const dbRes = await query(q, [user.id]);
+    res.json(dbRes.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Student predicts marks
+router.post('/predict-marks', authenticate, async (req: AuthRequest, res) => {
+  const { user } = req;
+  if (user.role !== 'STUDENT') return res.status(403).json({ error: 'Unauthorized' });
+
+  const { subject, attendance, mid_sem_1, mid_sem_2, internal_marks } = req.body;
+  if (!subject || attendance == null) {
+    return res.status(400).json({ error: 'Subject and attendance are required' });
+  }
+
+  let subject_difficulty = 5.0; // default
+  try {
+    const difficultiesPath = path.join(__dirname, '../../ml/subject_difficulties.json');
+    if (fs.existsSync(difficultiesPath)) {
+      const difficulties = JSON.parse(fs.readFileSync(difficultiesPath, 'utf8'));
+      if (difficulties[subject]) {
+        subject_difficulty = difficulties[subject];
+      }
+    }
+  } catch (err) {
+    console.error('Could not load subject difficulties:', err);
+  }
+
+  try {
+    const cgpaRes = await query('SELECT cgpa FROM cgpa_records WHERE student_id = $1', [user.id]);
+    const previous_cgpa = cgpaRes.rowCount > 0 ? cgpaRes.rows[0].cgpa : 0;
+
+    const inputData = {
+      attendance: Number(attendance),
+      subject_difficulty: Number(subject_difficulty),
+      previous_cgpa: Number(previous_cgpa),
+      mid_sem_1: mid_sem_1 !== undefined && mid_sem_1 !== "" ? Number(mid_sem_1) : "",
+      mid_sem_2: mid_sem_2 !== undefined && mid_sem_2 !== "" ? Number(mid_sem_2) : "",
+      internal_marks: internal_marks !== undefined && internal_marks !== "" ? Number(internal_marks) : "",
+    };
+    
+    const pythonScript = path.join(__dirname, '../../ml/predict_json.py');
+    const pythonProcess = spawn('python', [pythonScript]);
+
+    let result = '';
+    let errorOutput = '';
+
+    pythonProcess.stdout.on('data', (data) => { result += data.toString(); });
+    pythonProcess.stderr.on('data', (data) => { errorOutput += data.toString(); });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        return res.status(500).json({ error: `ML Prediction failed`, details: errorOutput });
+      }
+      try {
+        const parsed = JSON.parse(result);
+        if (parsed.error) return res.status(500).json({ error: parsed.error });
+        res.json(parsed);
+      } catch (e) {
+        res.status(500).json({ error: 'Failed to parse ML output' });
+      }
+    });
+
+    pythonProcess.stdin.write(JSON.stringify(inputData));
+    pythonProcess.stdin.end();
+
+  } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }

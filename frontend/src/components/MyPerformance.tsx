@@ -70,16 +70,16 @@ export default function MyPerformance() {
 
   const handleRequestMeeting = async (teacherId: string) => {
     if (!meetingTopic) {
-      alert("Please enter a topic for the meeting");
+      alert("Please enter a message for the teacher");
       return;
     }
     setRequestingMeeting(teacherId);
     try {
       await api.post('/meetings/request', { teacher_id: teacherId, topic: meetingTopic });
-      alert('Meeting request sent to the teacher!');
+      alert('Message sent to the teacher!');
       setMeetingTopic('');
     } catch (err) {
-      alert('Failed to request meeting.');
+      alert('Failed to send message.');
     } finally {
       setRequestingMeeting(null);
     }
@@ -120,7 +120,7 @@ export default function MyPerformance() {
                 
                 {/* Data Column */}
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">Performance Overview</h3>
+                  <h3 className="text-xl font-bold text-white mb-1">Performance Overview ({p.subject || 'Subject'})</h3>
                   <p className="text-sm text-gray-400 mb-6">Assessed by: {p.teacher_name}</p>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
@@ -129,16 +129,20 @@ export default function MyPerformance() {
                       <div className="text-lg font-semibold text-white">{p.attendance}%</div>
                     </div>
                     <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                      <div className="text-xs text-gray-400 uppercase tracking-wider">Assignments</div>
-                      <div className="text-lg font-semibold text-white">{p.assignment_avg}/10</div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wider">Mid Sem 1</div>
+                      <div className="text-lg font-semibold text-white">{p.mid_sem_1 || 0}/15</div>
                     </div>
                     <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                      <div className="text-xs text-gray-400 uppercase tracking-wider">Mid Marks</div>
-                      <div className="text-lg font-semibold text-white">{p.mid_marks}/30</div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wider">Mid Sem 2</div>
+                      <div className="text-lg font-semibold text-white">{p.mid_sem_2 || 0}/15</div>
                     </div>
                     <div className="bg-white/5 p-3 rounded-lg border border-white/5">
                       <div className="text-xs text-gray-400 uppercase tracking-wider">Internal Marks</div>
-                      <div className="text-lg font-semibold text-white">{p.internal_marks}/10</div>
+                      <div className="text-lg font-semibold text-white">{p.internal_marks || 0}/20</div>
+                    </div>
+                    <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                      <div className="text-xs text-gray-400 uppercase tracking-wider">End Sem Marks</div>
+                      <div className="text-lg font-semibold text-white">{p.end_sem_marks || 0}/50</div>
                     </div>
                     <div className="bg-white/5 p-3 rounded-lg border border-white/5">
                       <div className="text-xs text-gray-400 uppercase tracking-wider">Difficulty</div>
@@ -151,78 +155,33 @@ export default function MyPerformance() {
                   </div>
                 </div>
 
-                {/* ML Prediction Column */}
-                <div className="w-full md:w-1/3 flex flex-col justify-center">
-                  <div className={`p-6 rounded-xl border flex flex-col items-center justify-center text-center ${
-                    p.predicted_pass_percentage < 50 ? 'bg-red-500/10 border-red-500/30' :
-                    p.predicted_pass_percentage < 75 ? 'bg-yellow-500/10 border-yellow-500/30' :
-                    'bg-green-500/10 border-green-500/30'
-                  }`}>
-                    <span className="text-sm font-medium text-gray-300 uppercase tracking-wider mb-2">Predicted Pass %</span>
-                    <span className={`text-4xl font-black ${
-                      p.predicted_pass_percentage < 50 ? 'text-red-400' :
-                      p.predicted_pass_percentage < 75 ? 'text-yellow-400' :
-                      'text-green-400'
-                    }`}>
-                      {p.predicted_pass_percentage}%
-                    </span>
-                  </div>
-                </div>
               </div>
 
               {/* Alerts System based on ML output */}
               <div className="mt-6 border-t border-white/10 pt-6">
-                {p.predicted_pass_percentage < 50 && (
-                  <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <AlertTriangle className="text-red-400 flex-shrink-0" size={32} />
+                  <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <AlertCircle className="text-blue-400 flex-shrink-0" size={32} />
                     <div className="flex-1">
-                      <h4 className="text-red-400 font-bold">Critical Alert</h4>
-                      <p className="text-red-200 text-sm">Your predicted passing chance is very low. You must schedule a meeting with your teacher immediately to discuss a recovery plan.</p>
+                      <h4 className="text-blue-400 font-bold">Have a question?</h4>
+                      <p className="text-blue-200 text-sm">In case of any ambiguity with your marks, send a message to the teacher directly.</p>
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">
                       <input 
                         type="text"
-                        placeholder="Meeting topic..."
+                        placeholder="Type your message..."
                         value={meetingTopic}
                         onChange={e => setMeetingTopic(e.target.value)}
-                        className="bg-black/50 border border-red-500/30 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-red-500"
+                        className="bg-black/50 border border-blue-500/30 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
                       />
                       <button 
                         onClick={() => handleRequestMeeting(p.teacher_id)}
                         disabled={requestingMeeting === p.teacher_id}
-                        className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       >
-                        <Video size={16} /> Request Meet
+                        <MessageSquare size={16} /> Send Message
                       </button>
                     </div>
                   </div>
-                )}
-
-                {p.predicted_pass_percentage >= 50 && p.predicted_pass_percentage < 75 && (
-                  <div className="bg-yellow-900/30 border border-yellow-500/50 rounded-lg p-4 mb-4 flex items-start gap-4">
-                    <AlertCircle className="text-yellow-400 flex-shrink-0" size={28} />
-                    <div>
-                      <h4 className="text-yellow-400 font-bold">Warning</h4>
-                      <p className="text-yellow-200 text-sm">You are at risk of falling behind. Consider these suggested changes:</p>
-                      <ul className="list-disc list-inside text-yellow-200/80 text-sm mt-2">
-                        {p.attendance < 75 && <li>Improve your attendance immediately.</li>}
-                        {p.assignment_avg < 60 && <li>Focus on scoring higher in upcoming assignments.</li>}
-                        {p.mid_marks < 60 && <li>Review mid-term topics and seek extra help.</li>}
-                        <li>Dedicate more self-study hours per week.</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {p.predicted_pass_percentage >= 75 && (
-                  <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-4 mb-4 flex items-start gap-4">
-                    <CheckCircle className="text-green-400 flex-shrink-0" size={28} />
-                    <div>
-                      <h4 className="text-green-400 font-bold">On Track</h4>
-                      <p className="text-green-200 text-sm">Great job! Keep up the good work to maintain this trajectory.</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           ))}

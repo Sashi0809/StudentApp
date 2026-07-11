@@ -9,7 +9,19 @@ router.get('/students', authenticate, async (req: AuthRequest, res) => {
   if (!user || !['TEACHER', 'HOD'].includes(user.role)) return res.status(403).json({ error: 'Unauthorized' });
 
   try {
-    const dbRes = await query("SELECT id, name, email FROM users WHERE role = 'STUDENT' ORDER BY name ASC");
+    let dbRes;
+    if (user.role === 'TEACHER') {
+      dbRes = await query(`
+        SELECT DISTINCT u.id, u.name, u.email 
+        FROM users u
+        JOIN enrollments e ON u.id = e.student_id
+        JOIN classrooms c ON e.classroom_id = c.id
+        WHERE u.role = 'STUDENT' AND c.teacher_id = $1
+        ORDER BY u.name ASC
+      `, [user.id]);
+    } else {
+      dbRes = await query("SELECT id, name, email FROM users WHERE role = 'STUDENT' ORDER BY name ASC");
+    }
     return res.json(dbRes.rows);
   } catch (error) {
     console.error('Fetch students error:', error);

@@ -6,7 +6,6 @@ import os
 
 def main():
     try:
-        # Read JSON from stdin
         input_data = sys.stdin.read()
         if not input_data:
             print(json.dumps({"error": "No input provided"}))
@@ -14,71 +13,88 @@ def main():
             
         data = json.loads(input_data)
         
-        # Determine model path relative to this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        model_path = os.path.join(script_dir, 'student_pass_model.pkl')
+        model_mid1_path = os.path.join(script_dir, 'model_mid1.pkl')
+        model_mid2_path = os.path.join(script_dir, 'model_mid2.pkl')
+        model_end_path = os.path.join(script_dir, 'model_end.pkl')
         
-        if not os.path.exists(model_path):
-            print(json.dumps({"error": "Model file not found"}))
+        if not (os.path.exists(model_mid1_path) and os.path.exists(model_mid2_path) and os.path.exists(model_end_path)):
+            print(json.dumps({"error": "Model files not found"}))
             return
             
-        # Load the model
-        model = joblib.load(model_path)
+        model_mid1 = joblib.load(model_mid1_path)
+        model_mid2 = joblib.load(model_mid2_path)
+        model_end = joblib.load(model_end_path)
         
-        # Extract features
-        features = ['attendance', 'assignment_avg', 'mid_marks', 'internal_marks', 'subject_difficulty', 'previous_cgpa']
-        
-        # Convert input dictionary to DataFrame
         if isinstance(data, dict):
             df = pd.DataFrame([data])
-        elif isinstance(data, list):
-            df = pd.DataFrame(data)
         else:
             print(json.dumps({"error": "Invalid input format"}))
             return
             
-        # Ensure all features exist
-        for f in features:
-            if f not in df.columns:
-                df[f] = 0
-                
-        X_new = df[features].copy()
-        
-        # Neglect previous_cgpa for 1st sem students (where cgpa is 0 or null)
-        # We do this by replacing 0 with the neutral median CGPA so it doesn't penalize them.
-        mask = (X_new['previous_cgpa'] == 0) | (X_new['previous_cgpa'].isna())
-        if mask.any():
-            neutral_cgpa = 7.0
-            hist_path = os.path.join(script_dir, 'historical_data.csv')
-            if os.path.exists(hist_path):
-                try:
-                    hist_df = pd.read_csv(hist_path)
-                    if 'previous_cgpa' in hist_df.columns:
-                        median_val = hist_df[hist_df['previous_cgpa'] > 0]['previous_cgpa'].median()
-                        if pd.notna(median_val):
-                            neutral_cgpa = median_val
-                except Exception:
-                    pass
-            X_new.loc[mask, 'previous_cgpa'] = neutral_cgpa
-            
-        X_new = X_new.fillna(0)
-        
-        # SCALE INPUTS TO MATCH ORIGINAL MODEL EXPECTATIONS
-        # The frontend accepts 10 (assignment), 30 (mid), 10 (internal)
-        # But the original model was trained on 100, 30, 30.
-        X_new['assignment_avg'] = X_new['assignment_avg'] * 10
-        X_new['internal_marks'] = X_new['internal_marks'] * 3
-        
-        # Predict
-        pass_probabilities = model.predict_proba(X_new)[:, 1] * 100
-        
-        # Return results
-        results = pass_probabilities.round(2).tolist()
-        
-        if isinstance(data, dict):
-            print(json.dumps({"predicted_passing_percentage": results[0]}))
+        # Defaults
+        if 'attendance' not in df.columns or pd.isna(df['attendance'].iloc[0]) or df['attendance'].iloc[0] == "":
+            df['attendance'] = 75
         else:
-            print(json.dumps({"predicted_passing_percentages": results}))
+            df['attendance'] = float(df['attendance'].iloc[0])
+            
+        if 'previous_cgpa' not in df.columns or pd.isna(df['previous_cgpa'].iloc[0]) or df['previous_cgpa'].iloc[0] == "":
+            df['previous_cgpa'] = 7.0
+        else:
+            df['previous_cgpa'] = float(df['previous_cgpa'].iloc[0])
+            
+        if 'subject_difficulty' not in df.columns or pd.isna(df['subject_difficulty'].iloc[0]) or df['subject_difficulty'].iloc[0] == "":
+            df['subject_difficulty'] = 5.0
+        else:
+            df['subject_difficulty'] = float(df['subject_difficulty'].iloc[0])
+            
+        # Handle 1st sem
+        if df['previous_cgpa'].iloc[0] == 0:
+            df['previous_cgpa'] = 7.0 # neutral
+            
+        # Predict Mid 1 if not provided
+        provided_mid1 = 'mid_sem_1' in df.columns and pd.notna(df['mid_sem_1'].iloc[0]) and df['mid_sem_1'].iloc[0] != ""
+        if not provided_mid1:
+            X1 = df[['attendance', 'previous_cgpa', 'subject_difficulty']]
+            pred_mid1 = model_mid1.predict(X1)[0]
+            df['mid_sem_1'] = pred_mid1
+        else:
+            df['mid_sem_1'] = float(df['mid_sem_1'].iloc[0])
+            
+        # Predict Mid 2 if not provided
+        provided_mid2 = 'mid_sem_2' in df.columns and pd.notna(df['mid_sem_2'].iloc[0]) and df['mid_sem_2'].iloc[0] != ""
+        if not provided_mid2:
+            X2 = df[['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1']]
+            pred_mid2 = model_mid2.predict(X2)[0]
+            df['mid_sem_2'] = pred_mid2
+        else:
+            df['mid_sem_2'] = float(df['mid_sem_2'].iloc[0])
+            
+        # Internal marks
+        provided_int = 'internal_marks' in df.columns and pd.notna(df['internal_marks'].iloc[0]) and df['internal_marks'].iloc[0] != ""
+        if not provided_int:
+            # Estimate internal marks based on attendance (max 20)
+            df['internal_marks'] = (df['attendance'] / 100) * 20
+        else:
+            df['internal_marks'] = float(df['internal_marks'].iloc[0])
+            
+        # Predict End Sem
+        X3 = df[['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1', 'mid_sem_2', 'internal_marks']]
+        pred_end = model_end.predict(X3)[0]
+        
+        total = df['mid_sem_1'].iloc[0] + df['mid_sem_2'].iloc[0] + df['internal_marks'].iloc[0] + pred_end
+        
+        print(json.dumps({
+            "mid_sem_1_predicted": not provided_mid1,
+            "mid_sem_1": round(float(df['mid_sem_1'].iloc[0]), 1),
+            "mid_sem_2_predicted": not provided_mid2,
+            "mid_sem_2": round(float(df['mid_sem_2'].iloc[0]), 1),
+            "internal_predicted": not provided_int,
+            "internal_marks": round(float(df['internal_marks'].iloc[0]), 1),
+            "end_sem_predicted": True,
+            "end_sem_marks": round(float(pred_end), 1),
+            "total_marks": round(float(total), 1)
+        }))
             
     except Exception as e:
         print(json.dumps({"error": str(e)}))

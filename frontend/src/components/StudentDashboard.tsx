@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import CalendarView from './CalendarView';
 import TimetableView from './TimetableView';
 import MyPerformance from './MyPerformance';
+import MarkPredictor from './MarkPredictor';
+import PastResults from './PastResults';
 import api from '../lib/axios';
 
 type Classroom = {
@@ -14,7 +16,7 @@ type Classroom = {
 };
 
 export default function StudentDashboard() {
-  const [activeTab, setActiveTab] = useState<'classes' | 'calendar' | 'timetable' | 'performance'>('classes');
+  const [activeTab, setActiveTab] = useState<'classes' | 'calendar' | 'timetable' | 'performance' | 'predictor' | 'history'>('classes');
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState('');
@@ -112,6 +114,34 @@ export default function StudentDashboard() {
             </svg>
             <span className="font-medium">My Performance</span>
           </button>
+          
+          <button
+            onClick={() => setActiveTab('predictor')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'predictor'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span className="font-medium">Mark Predictor</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'history'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">Academic History</span>
+          </button>
         </div>
       </div>
 
@@ -184,6 +214,18 @@ export default function StudentDashboard() {
         {activeTab === 'performance' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <MyPerformance />
+          </div>
+        )}
+
+        {activeTab === 'predictor' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <MarkPredictor />
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PastResults />
           </div>
         )}
       </div>
