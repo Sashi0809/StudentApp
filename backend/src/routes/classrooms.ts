@@ -9,19 +9,23 @@ import fs from 'fs';
 
 const router = Router();
 
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: 'classrooms',
+      public_id: `${Date.now()}-${file.originalname.split('.')[0]}`
+    };
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
 });
 
 const upload = multer({ 
@@ -190,7 +194,7 @@ router.post('/:id/materials', authenticate, upload.single('file'), async (req: A
     const hasAccess = await verifyClassroomAccess(user.id, user.role, id);
     if (!hasAccess) return res.status(403).json({ error: 'Access denied to this classroom' });
 
-    const filePath = `/uploads/${req.file.filename}`;
+    const filePath = req.file.path;
     const dbRes = await query(
       'INSERT INTO classroom_materials (classroom_id, title, file_path) VALUES ($1, $2, $3) RETURNING *',
       [id, title, filePath]
@@ -237,7 +241,7 @@ router.post('/:id/assignments', authenticate, upload.single('file'), async (req:
     const hasAccess = await verifyClassroomAccess(user.id, user.role, id);
     if (!hasAccess) return res.status(403).json({ error: 'Access denied to this classroom' });
 
-    const filePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const filePath = req.file ? req.file.path : null;
     const dbRes = await query(
       'INSERT INTO classroom_assignments (classroom_id, title, description, deadline, file_path) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [id, title, description || null, deadline, filePath]
@@ -292,7 +296,7 @@ router.post('/:id/assignments/:assignmentId/submit', authenticate, upload.single
     const hasAccess = await verifyClassroomAccess(user.id, user.role, id);
     if (!hasAccess) return res.status(403).json({ error: 'Access denied to this classroom' });
 
-    const filePath = `/uploads/${req.file.filename}`;
+    const filePath = req.file.path;
     const dbRes = await query(
       'INSERT INTO assignment_submissions (assignment_id, student_id, file_path) VALUES ($1, $2, $3) RETURNING *',
       [assignmentId, user.id, filePath]
