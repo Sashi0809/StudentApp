@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node -r tsx src/server.ts",
-    "build": "tsc"
+    "build": "echo 'Build skipped since we use tsx in production'"
   },
   "keywords": [],
   "author": "",
