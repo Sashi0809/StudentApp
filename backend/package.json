@@ -21,7 +21,10 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "multer-storage-cloudinary": "^4.0.0",
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -29,9 +32,6 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
-    "@types/pg": "^8.20.0",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.23.0",
-    "typescript": "^7.0.2"
+    "@types/pg": "^8.20.0"
   }
 }
