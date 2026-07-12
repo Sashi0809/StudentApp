@@ -48,7 +48,7 @@ export default function TimetableView({ onLoad, hideIfEmpty }: { onLoad?: (exist
  );
  }
 
- const fileUrl = `http://localhost:5000${timetable.file_path}?token=${localStorage.getItem('token')}`;
+ const fileUrl = timetable.file_path;
  const isImage = timetable.file_path.match(/\.(jpeg|jpg|gif|png)$/i);
  const isPDF = timetable.file_path.match(/\.(pdf)$/i);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar as CalendarIcon, Clock, AlertCircle, Folder, ClipboardList, TrendingUp, History, Activity, MessageSquare } from 'lucide-react';
+import { BookOpen, Calendar as CalendarIcon, Clock, TrendingUp, History, Activity, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CalendarView from './CalendarView';
 import TimetableView from './TimetableView';

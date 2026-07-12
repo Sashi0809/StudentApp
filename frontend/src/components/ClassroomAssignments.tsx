@@ -188,7 +188,7 @@ export default function ClassroomAssignments({ classroomId }: { classroomId: str
  </div>
  {assign.file_path && (
  <a
- href={`http://localhost:5000${assign.file_path}?token=${localStorage.getItem('token')}`}
+ href={assign.file_path}
  target="_blank"
  rel="noopener noreferrer"
  className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 bg-blue-500/10 px-3 py-1 rounded-full transition-colors"
@@ -207,7 +207,7 @@ export default function ClassroomAssignments({ classroomId }: { classroomId: str
  <CheckCircle size={16} /> Submitted
  </span>
  <a 
- href={`http://localhost:5000${mySubmissions[0].file_path}?token=${localStorage.getItem('token')}`}
+ href={mySubmissions[0].file_path}
  target="_blank"
  rel="noopener noreferrer"
  className="text-xs text-blue-400 hover:underline mt-2 block"
@@ -257,7 +257,7 @@ export default function ClassroomAssignments({ classroomId }: { classroomId: str
  <p className="text-gray-500 text-xs">{new Date(sub.submitted_at).toLocaleString()}</p>
  </div>
  <a
- href={`http://localhost:5000${sub.file_path}?token=${localStorage.getItem('token')}`}
+ href={sub.file_path}
  target="_blank"
  rel="noopener noreferrer"
  className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors"

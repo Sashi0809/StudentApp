@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Key, BookOpen, Clock, Activity, MessageSquare, Folder, TrendingUp, Edit2, X, Check } from 'lucide-react';
+import { Key, BookOpen, Clock, MessageSquare, TrendingUp, Edit2, X, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
@@ -231,7 +231,7 @@ export default function TeacherDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {classrooms.map((c, idx) => {
                   const bannerColor = BANNER_COLORS[idx % BANNER_COLORS.length];
-                  const avatarLetter = user.name.charAt(0).toUpperCase();
+                  const avatarLetter = user?.name?.charAt(0).toUpperCase() || 'T';
 
                   return (
                     <div key={c.id} className="h-[280px] border border-gray-300 rounded-lg overflow-hidden flex flex-col hover:shadow-md transition-shadow relative bg-white group">

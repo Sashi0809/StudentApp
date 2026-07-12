@@ -115,7 +115,7 @@ export default function ClassroomMaterials({ classroomId }: { classroomId: strin
  </div>
  </div>
  <a
- href={`http://localhost:5000${m.file_path}?token=${localStorage.getItem('token')}`}
+ href={m.file_path}
  target="_blank"
  rel="noopener noreferrer"
  className="p-2 text-gray-500 hover:text-gray-900 hover:bg-white rounded-full transition-colors"

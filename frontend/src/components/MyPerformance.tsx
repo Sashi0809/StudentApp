@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, AlertTriangle, AlertCircle, CheckCircle, Video, MessageSquare } from 'lucide-react';
+import { Activity, AlertCircle, MessageSquare } from 'lucide-react';
 import api from '../lib/axios';
 
 export default function MyPerformance() {
