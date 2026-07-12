@@ -8,7 +8,7 @@ type Timetable = {
  uploaded_at: string;
 };
 
-export default function TimetableView() {
+export default function TimetableView({ onLoad, hideIfEmpty }: { onLoad?: (exists: boolean) => void, hideIfEmpty?: boolean } = {}) {
  const [timetable, setTimetable] = useState<Timetable | null>(null);
  const [loading, setLoading] = useState(true);
 
@@ -18,19 +18,25 @@ export default function TimetableView() {
  const res = await api.get('/timetables');
  if (res.data) {
  setTimetable(res.data);
+ onLoad?.(true);
+ } else {
+ onLoad?.(false);
  }
  } catch (err) {
  console.error('Failed to fetch timetable', err);
+ onLoad?.(false);
  } finally {
  setLoading(false);
  }
  };
  fetchTimetable();
+ // eslint-disable-next-line react-hooks/exhaustive-deps
  }, []);
 
  if (loading) return <div className="text-gray-500">Loading timetable...</div>;
 
  if (!timetable) {
+ if (hideIfEmpty) return null;
  return (
  <div className="bg-white border border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center min-h-[300px] text-center">
  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4">

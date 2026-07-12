@@ -40,7 +40,7 @@ router.post('/upload', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// GET records
+// GET records (HOD)
 router.get('/', authenticate, async (req: AuthRequest, res) => {
   if (req.user.role !== 'HOD') return res.status(403).json({ error: 'Unauthorized' });
   try {
@@ -51,6 +51,19 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     `;
     const dbRes = await query(q);
     res.json(dbRes.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET own CGPA (STUDENT)
+router.get('/me', authenticate, async (req: AuthRequest, res) => {
+  if (req.user.role !== 'STUDENT') return res.status(403).json({ error: 'Unauthorized' });
+  try {
+    const dbRes = await query('SELECT cgpa FROM cgpa_records WHERE student_id = $1', [req.user.id]);
+    if (dbRes.rowCount === 0) return res.json({ cgpa: null });
+    res.json({ cgpa: dbRes.rows[0].cgpa });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });

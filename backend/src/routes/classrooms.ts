@@ -125,6 +125,38 @@ router.get('/:id', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// PUT update classroom
+router.put('/:id', authenticate, async (req: AuthRequest, res) => {
+  const user = req.user;
+  const { id } = req.params;
+  const { name, description } = req.body;
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  
+  if (user.role !== 'TEACHER') {
+    return res.status(403).json({ error: 'Only teachers can update classrooms' });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: 'Classroom name is required' });
+  }
+
+  try {
+    const hasAccess = await verifyClassroomAccess(user.id, user.role, id);
+    if (!hasAccess) return res.status(403).json({ error: 'Access denied to this classroom' });
+
+    const dbRes = await query(
+      'UPDATE classrooms SET name = $1, description = $2 WHERE id = $3 RETURNING *',
+      [name, description || null, id]
+    );
+
+    if (dbRes.rowCount === 0) return res.status(404).json({ error: 'Classroom not found' });
+    return res.json(dbRes.rows[0]);
+  } catch (error) {
+    console.error('Update classroom error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET materials
 router.get('/:id/materials', authenticate, async (req: AuthRequest, res) => {
   const user = req.user;

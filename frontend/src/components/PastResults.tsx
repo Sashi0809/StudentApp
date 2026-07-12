@@ -3,35 +3,46 @@ import { History } from 'lucide-react';
 import api from '../lib/axios';
 
 export default function PastResults() {
- const [history, setHistory] = useState<any[]>([]);
- const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<any[]>([]);
+  const [cgpa, setCgpa] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
 
- useEffect(() => {
- api.get('/performance/history').then(res => {
- setHistory(res.data);
- setLoading(false);
- }).catch(err => {
- console.error(err);
- setLoading(false);
- });
- }, []);
+  useEffect(() => {
+    Promise.all([
+      api.get('/performance/history'),
+      api.get('/cgpa/me').catch(() => ({ data: { cgpa: 0 } }))
+    ]).then(([histRes, cgpaRes]) => {
+      setHistory(histRes.data);
+      setCgpa(cgpaRes.data.cgpa || 0);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, []);
 
- if (loading) return <div className="text-gray-500">Loading past results...</div>;
+  if (loading) return <div className="text-gray-500">Loading past results...</div>;
 
- // Group by semester
- const grouped = history.reduce((acc: any, curr: any) => {
- if (!acc[curr.semester_name]) {
- acc[curr.semester_name] = [];
- }
- acc[curr.semester_name].push(curr);
- return acc;
- }, {});
+  // Group by semester
+  const grouped = history.reduce((acc: any, curr: any) => {
+    if (!acc[curr.semester_name]) {
+      acc[curr.semester_name] = [];
+    }
+    acc[curr.semester_name].push(curr);
+    return acc;
+  }, {});
 
- return (
- <div className="space-y-6">
- <h2 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
- <History className="text-blue-400" /> Academic History
- </h2>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
+          <History className="text-blue-400" /> Academic History
+        </h2>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-5 py-2.5 rounded-xl shadow-sm flex items-center gap-3">
+          <span className="text-blue-900 font-medium">Cumulative GPA:</span>
+          <span className="text-2xl font-bold text-blue-700 tracking-tight">{cgpa.toFixed(2)}</span>
+        </div>
+      </div>
 
  {Object.keys(grouped).length === 0 ? (
  <p className="text-gray-500 bg-black/20 p-6 rounded-xl border border-gray-100 text-center">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Key, BookOpen, Clock, Activity, MessageSquare, Folder, TrendingUp } from 'lucide-react';
+import { Key, BookOpen, Clock, Activity, MessageSquare, Folder, TrendingUp, Edit2, X, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
@@ -28,17 +28,28 @@ export default function TeacherDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'classes' | 'timetable' | 'performance' | 'messages'>('classes');
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [activeSemester, setActiveSemester] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
+  
+  // Edit state
+  const [editingClassId, setEditingClassId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchClassrooms = async () => {
     try {
-      const res = await api.get('/classrooms');
+      const [res, semRes] = await Promise.all([
+        api.get('/classrooms'),
+        api.get('/semesters/active').catch(() => ({ data: null }))
+      ]);
       setClassrooms(res.data);
+      setActiveSemester(semRes.data);
     } catch (err) {
       console.error('Failed to fetch classrooms', err);
     } finally {
@@ -67,6 +78,19 @@ export default function TeacherDashboard() {
       setError(err.response?.data?.error || 'Failed to create classroom');
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleUpdate = async (id: string) => {
+    setIsUpdating(true);
+    try {
+      await api.put(`/classrooms/${id}`, { name: editName, description: editDescription });
+      setEditingClassId(null);
+      fetchClassrooms();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to update classroom');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -154,6 +178,15 @@ export default function TeacherDashboard() {
         {activeTab === 'classes' && (
           <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
             
+            {activeSemester && (new Date(activeSemester.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+              <div className="mb-8 bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl p-6 shadow-md text-white flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold mb-1">🎉 A new semester has started!</h3>
+                  <p className="text-emerald-100">Welcome to {activeSemester.name}. You can now record new performance grades and rename your classes for the new term.</p>
+                </div>
+              </div>
+            )}
+
             <div className="mb-8 flex justify-end">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 w-full md:w-auto md:min-w-[400px]">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Create New Classroom</h3>
@@ -204,19 +237,58 @@ export default function TeacherDashboard() {
                     <div key={c.id} className="h-[280px] border border-gray-300 rounded-lg overflow-hidden flex flex-col hover:shadow-md transition-shadow relative bg-white group">
                       
                       {/* Top Banner Half */}
-                      <Link to={`/classrooms/${c.id}`} className={`h-28 p-4 block ${bannerColor} relative group-hover:opacity-95 transition-opacity`}>
+                      <div className={`h-28 p-4 block ${bannerColor} relative group-hover:opacity-95 transition-opacity`}>
                         <div className="flex justify-between items-start">
-                          <h4 className="text-white text-[22px] font-medium truncate w-[90%] tracking-tight hover:underline">
-                            {c.name}
-                          </h4>
-                          <button className="text-white/80 hover:text-white mt-1">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                            </svg>
-                          </button>
+                          {editingClassId === c.id ? (
+                            <div className="w-[90%] flex flex-col gap-1 z-20">
+                              <input 
+                                value={editName}
+                                onChange={e => setEditName(e.target.value)}
+                                className="w-full bg-white/20 border border-white/40 text-white rounded px-2 py-1 text-lg font-medium placeholder-white/60 focus:outline-none focus:bg-white/30"
+                                placeholder="Classroom Name"
+                                autoFocus
+                              />
+                              <input 
+                                value={editDescription}
+                                onChange={e => setEditDescription(e.target.value)}
+                                className="w-full bg-white/20 border border-white/40 text-white rounded px-2 py-1 text-sm placeholder-white/60 focus:outline-none focus:bg-white/30"
+                                placeholder="Description"
+                              />
+                            </div>
+                          ) : (
+                            <Link to={`/classrooms/${c.id}`} className="w-[90%] block">
+                              <h4 className="text-white text-[22px] font-medium truncate tracking-tight hover:underline">
+                                {c.name}
+                              </h4>
+                              <p className="text-white/90 text-sm truncate mt-1">{c.description || 'No section'}</p>
+                            </Link>
+                          )}
+                          
+                          {editingClassId === c.id ? (
+                            <div className="flex gap-1 z-20">
+                              <button onClick={() => handleUpdate(c.id)} disabled={isUpdating} className="p-1 bg-white/20 hover:bg-white/40 text-white rounded transition-colors disabled:opacity-50">
+                                <Check size={16} />
+                              </button>
+                              <button onClick={() => setEditingClassId(null)} disabled={isUpdating} className="p-1 bg-white/20 hover:bg-white/40 text-white rounded transition-colors disabled:opacity-50">
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setEditingClassId(c.id);
+                                setEditName(c.name);
+                                setEditDescription(c.description || '');
+                              }} 
+                              className="text-white/80 hover:text-white mt-1 z-20 p-1 hover:bg-white/20 rounded transition-colors"
+                              title="Edit Classroom"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          )}
                         </div>
-                        <p className="text-white/90 text-sm truncate mt-1">{c.description || 'No section'}</p>
-                      </Link>
+                      </div>
 
                       {/* Floating Avatar */}
                       <div className="absolute top-[84px] right-4 w-[72px] h-[72px] rounded-full bg-orange-600 border-[4px] border-white flex items-center justify-center shadow-sm overflow-hidden z-10">
@@ -230,15 +302,7 @@ export default function TeacherDashboard() {
                         </div>
                       </Link>
 
-                      {/* Footer Actions */}
-                      <div className="h-12 border-t border-gray-200 flex items-center justify-end px-2 gap-1 bg-white">
-                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Gradebook">
-                          <TrendingUp size={20} strokeWidth={1.5} />
-                        </button>
-                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Folder">
-                          <Folder size={20} strokeWidth={1.5} />
-                        </button>
-                      </div>
+
                     </div>
                   );
                 })}

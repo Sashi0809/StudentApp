@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar as CalendarIcon, Clock, AlertCircle, Folder, ClipboardList, TrendingUp, History, Activity } from 'lucide-react';
+import { BookOpen, Calendar as CalendarIcon, Clock, AlertCircle, Folder, ClipboardList, TrendingUp, History, Activity, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CalendarView from './CalendarView';
 import TimetableView from './TimetableView';
 import MyPerformance from './MyPerformance';
 import MarkPredictor from './MarkPredictor';
 import PastResults from './PastResults';
+import StudentComplaints from './StudentComplaints';
 import api from '../lib/axios';
 
 type Classroom = {
@@ -26,9 +27,10 @@ const BANNER_COLORS = [
 ];
 
 export default function StudentDashboard() {
-  const [activeTab, setActiveTab] = useState<'classes' | 'calendar' | 'timetable' | 'performance' | 'predictor' | 'history'>('classes');
+  const [activeTab, setActiveTab] = useState<'classes' | 'calendar' | 'timetable' | 'performance' | 'predictor' | 'history' | 'complaints'>('classes');
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
+  const [activeSemester, setActiveSemester] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -37,12 +39,14 @@ export default function StudentDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [classRes, assignRes] = await Promise.all([
+      const [classRes, assignRes, semRes] = await Promise.all([
         api.get('/classrooms'),
-        api.get('/users/me/assignments')
+        api.get('/users/me/assignments'),
+        api.get('/semesters/active').catch(() => ({ data: null }))
       ]);
       setClassrooms(classRes.data);
       setPendingAssignments(assignRes.data);
+      setActiveSemester(semRes.data);
     } catch (err) {
       console.error('Failed to fetch dashboard data', err);
     } finally {
@@ -152,6 +156,18 @@ export default function StudentDashboard() {
             <History size={20} className={activeTab === 'history' ? 'text-blue-600' : 'text-gray-600'} />
             <span>Academic History</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('complaints')}
+            className={`w-full flex items-center gap-4 px-6 py-3 rounded-r-full transition-colors ${
+              activeTab === 'complaints'
+                ? 'bg-blue-100/50 text-blue-900 font-medium'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <MessageSquare size={20} className={activeTab === 'complaints' ? 'text-blue-600' : 'text-gray-600'} />
+            <span>Complaints</span>
+          </button>
         </div>
       </div>
 
@@ -160,19 +176,14 @@ export default function StudentDashboard() {
         {activeTab === 'classes' && (
           <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
             
-            {/* Top Banner mock */}
-            <div className="mb-8 bg-blue-50 border border-blue-100 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-              <div className="z-10">
-                <h2 className="text-xl font-medium text-blue-900 mb-2">Introducing Generative AI for Students</h2>
-                <p className="text-blue-800 text-sm max-w-2xl">A two-hour, no-cost online course. Save time and enhance learning with generative AI.</p>
+            {activeSemester && (new Date(activeSemester.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+              <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 shadow-md text-white flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold mb-1">🎉 A new semester has started!</h3>
+                  <p className="text-blue-100">Welcome to {activeSemester.name}. Have a great term ahead!</p>
+                </div>
               </div>
-              <div className="flex gap-4 mt-4 md:mt-0 z-10">
-                <button className="px-4 py-2 border border-blue-600 text-blue-700 hover:bg-blue-50 font-medium rounded-md transition-colors text-sm">Learn more</button>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-sm">Get started</button>
-              </div>
-              {/* decorative circle */}
-              <div className="absolute right-[-5%] top-[-50%] w-64 h-64 bg-blue-100 rounded-full opacity-50"></div>
-            </div>
+            )}
 
             {/* Join Class form - subtle */}
             <div className="mb-8 flex justify-end">
@@ -244,15 +255,7 @@ export default function StudentDashboard() {
                         </div>
                       </Link>
 
-                      {/* Footer Actions */}
-                      <div className="h-12 border-t border-gray-200 flex items-center justify-end px-2 gap-1 bg-white">
-                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Your Work">
-                          <ClipboardList size={20} strokeWidth={1.5} />
-                        </button>
-                        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Open Folder">
-                          <Folder size={20} strokeWidth={1.5} />
-                        </button>
-                      </div>
+
                     </div>
                   );
                 })}
@@ -266,6 +269,7 @@ export default function StudentDashboard() {
         {activeTab === 'performance' && <MyPerformance />}
         {activeTab === 'predictor' && <MarkPredictor />}
         {activeTab === 'history' && <PastResults />}
+        {activeTab === 'complaints' && <StudentComplaints />}
       </div>
     </div>
   );

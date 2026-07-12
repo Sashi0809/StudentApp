@@ -39,11 +39,7 @@ export default function Dashboard() {
       {/* Top Navbar */}
       <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 bg-white z-50">
         <div className="flex items-center gap-6">
-          <button className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
-            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+
           <div className="text-[22px] font-medium text-gray-600 hover:text-gray-900 transition-colors cursor-pointer tracking-tight">
             Classroom
           </div>
@@ -55,17 +51,7 @@ export default function Dashboard() {
             {departmentName && <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold text-xs tracking-wide">{departmentName}</span>}
           </div>
           
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
 
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-          </button>
 
           <div className="relative group cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-medium text-sm border-2 border-white shadow-sm ring-1 ring-gray-200">
