@@ -62,7 +62,7 @@ router.post('/upload', authenticate, upload.single('timetable'), async (req: Aut
       [user.department_id, filePath]
     );
     return res.status(201).json(dbRes.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Upload timetable error:', error.message, error.stack);
     return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
