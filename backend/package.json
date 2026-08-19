@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "start": "node -r tsx src/server.ts",
-    "build": "echo 'Build skipped since we use tsx in production'"
+    "dev": "tsx watch src/server.js",
+    "start": "node -r tsx src/server.js",
+    "build": "echo 'Build skipped'"
   },
   "keywords": [],
   "author": "",
@@ -22,16 +22,6 @@
     "multer": "^2.2.0",
     "multer-storage-cloudinary": "^4.0.0",
     "pg": "^8.22.0",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.23.0",
-    "typescript": "^7.0.2"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/multer": "^2.2.0",
-    "@types/pg": "^8.20.0"
+    "tsx": "^4.23.12"
   }
 }
