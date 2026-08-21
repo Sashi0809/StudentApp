@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.js",
-    "start": "node -r tsx src/server.js",
+    "start": "tsx src/server.js",
     "build": "echo 'Build skipped'"
   },
   "keywords": [],
