@@ -5,12 +5,13 @@ import api from '../lib/axios';
 export default function MarkPredictor() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    subject: 'CSE101',
+    subject: 'Intro to Art',
     attendance: '',
     mid_sem_1: '',
     mid_sem_2: '',
     internal_marks: ''
   });
+  const [customSubject, setCustomSubject] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
@@ -20,7 +21,16 @@ export default function MarkPredictor() {
     setError('');
 
     try {
-      const res = await api.post('/performance/predict-marks', formData);
+      const payload = { ...formData };
+      if (payload.subject === 'Other') {
+        if (!customSubject.trim()) {
+          setError('Please enter a custom subject name');
+          setLoading(false);
+          return;
+        }
+        payload.subject = customSubject;
+      }
+      const res = await api.post('/performance/predict-marks', payload);
       setResult(res.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to predict marks');
@@ -38,24 +48,35 @@ export default function MarkPredictor() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
  <div>
  <form onSubmit={handleSubmit} className="space-y-4">
- <div>
- <label className="block text-sm text-gray-700 mb-1">Subject</label>
- <select
-                required
-                value={formData.subject}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-purple-500">
-                
- <option value="CSE101">CSE101</option>
- <option value="CSE102">CSE102</option>
- <option value="CSE201">CSE201</option>
- <option value="CSE202">CSE202</option>
- <option value="CSE301">CSE301</option>
- <option value="CSE302">CSE302</option>
- <option value="CSE303">CSE303</option>
- <option value="CSE401">CSE401</option>
- </select>
- </div>
+  <div>
+  <label className="block text-sm text-gray-700 mb-1">Subject</label>
+  <select
+                 required
+                 value={formData.subject}
+                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                 className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-purple-500">
+                 
+  <option value="Intro to Art">Intro to Art</option>
+  <option value="Communication Skills">Communication Skills</option>
+  <option value="CSE101">CSE101</option>
+  <option value="Physics 101">Physics 101</option>
+  <option value="Mathematics II">Mathematics II</option>
+  <option value="Advanced Algorithms">Advanced Algorithms</option>
+  <option value="Other">Other...</option>
+  </select>
+  </div>
+  
+  {formData.subject === 'Other' && (
+    <div>
+      <label className="block text-sm text-gray-700 mb-1">Custom Subject Name</label>
+      <input
+        type="text" required
+        value={customSubject}
+        onChange={(e) => setCustomSubject(e.target.value)}
+        placeholder="Enter subject name"
+        className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-purple-500" />
+    </div>
+  )}
  
  <div>
  <label className="block text-sm text-gray-700 mb-1">Attendance (%) *</label>
