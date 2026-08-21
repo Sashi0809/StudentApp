@@ -266,10 +266,13 @@ router.post('/predict-marks', authenticate, async (req, res) => {
         return res.status(500).json({ error: `ML Prediction failed`, details: errorOutput });
       }
       try {
-        const parsed = JSON.parse(result);
+        const jsonMatch = result.match(/\{.*\}/s);
+        if (!jsonMatch) throw new Error("No JSON payload found in python output");
+        const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.error) return res.status(500).json({ error: parsed.error });
         res.json(parsed);
       } catch (e) {
+        console.error("ML Parse Error:", e, "Raw Result:", result);
         res.status(500).json({ error: 'Failed to parse ML output' });
       }
     });

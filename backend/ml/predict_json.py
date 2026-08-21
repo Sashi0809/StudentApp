@@ -3,6 +3,9 @@ import json
 import joblib
 import pandas as pd
 import os
+import warnings
+
+warnings.filterwarnings("ignore")
 
 def main():
     try:
