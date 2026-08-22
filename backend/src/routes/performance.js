@@ -81,10 +81,14 @@ router.post('/', authenticate, async (req, res) => {
     }
     const semester_id = semRes.rows[0].id;
 
+    // Fetch the student's current CGPA at the time of this record
+    const cgpaRes = await query('SELECT ROUND(AVG(cgpa), 2) as cgpa FROM cgpa_records WHERE student_id = $1', [student_id]);
+    const previous_cgpa = cgpaRes.rowCount > 0 && cgpaRes.rows[0].cgpa !== null ? cgpaRes.rows[0].cgpa : 0;
+
     // Save to DB (assignment_avg set to 0 as we no longer use it)
     const insertRes = await query(`
-      INSERT INTO student_performance (student_id, teacher_id, semester_id, attendance, assignment_avg, internal_marks, subject_difficulty, mid_sem_1, mid_sem_2, end_sem_marks, final_score, subject, updated_at, shared_at)
-      VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO student_performance (student_id, teacher_id, semester_id, attendance, assignment_avg, internal_marks, subject_difficulty, mid_sem_1, mid_sem_2, end_sem_marks, final_score, subject, previous_cgpa, updated_at, shared_at)
+      VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (student_id, teacher_id, semester_id) 
       DO UPDATE SET 
         attendance = EXCLUDED.attendance,
@@ -95,10 +99,11 @@ router.post('/', authenticate, async (req, res) => {
         end_sem_marks = EXCLUDED.end_sem_marks,
         final_score = EXCLUDED.final_score,
         subject = EXCLUDED.subject,
+        previous_cgpa = EXCLUDED.previous_cgpa,
         updated_at = CURRENT_TIMESTAMP,
         shared_at = CURRENT_TIMESTAMP
       RETURNING *
-    `, [student_id, user.id, semester_id, attendance, intM, subject_difficulty, m1, m2, endM, final_score, subject]);
+    `, [student_id, user.id, semester_id, attendance, intM, subject_difficulty, m1, m2, endM, final_score, subject, previous_cgpa]);
 
     res.json(insertRes.rows[0]);
   } catch (err) {
@@ -240,8 +245,8 @@ router.post('/predict-marks', authenticate, async (req, res) => {
   }
 
   try {
-    const cgpaRes = await query('SELECT cgpa FROM cgpa_records WHERE student_id = $1', [user.id]);
-    const previous_cgpa = cgpaRes.rowCount > 0 ? cgpaRes.rows[0].cgpa : 0;
+    const cgpaRes = await query('SELECT ROUND(AVG(cgpa), 2) as cgpa FROM cgpa_records WHERE student_id = $1', [user.id]);
+    const previous_cgpa = cgpaRes.rowCount > 0 && cgpaRes.rows[0].cgpa !== null ? cgpaRes.rows[0].cgpa : 0;
 
     const inputData = {
       attendance: Number(attendance),

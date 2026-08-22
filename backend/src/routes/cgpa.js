@@ -16,6 +16,13 @@ router.post('/upload', authenticate, async (req, res) => {
   }
 
   try {
+    // Get active semester
+    const semRes = await query('SELECT id FROM semesters WHERE is_active = true LIMIT 1');
+    if (semRes.rowCount === 0) {
+      return res.status(400).json({ error: 'No active semester found' });
+    }
+    const semester_id = semRes.rows[0].id;
+
     let successCount = 0;
     for (const record of records) {
       const { student_email, cgpa } = record;
@@ -24,11 +31,11 @@ router.post('/upload', authenticate, async (req, res) => {
       if (studentRes.rowCount > 0) {
         const student_id = studentRes.rows[0].id;
         await query(`
-          INSERT INTO cgpa_records (student_id, hod_id, cgpa, updated_at)
-          VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-          ON CONFLICT (student_id) 
+          INSERT INTO cgpa_records (student_id, semester_id, hod_id, cgpa, updated_at)
+          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+          ON CONFLICT (student_id, semester_id) 
           DO UPDATE SET cgpa = EXCLUDED.cgpa, updated_at = CURRENT_TIMESTAMP
-        `, [student_id, user.id, cgpa]);
+        `, [student_id, semester_id, user.id, cgpa]);
         successCount++;
       }
     }
@@ -57,12 +64,11 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// GET own CGPA (STUDENT)
 router.get('/me', authenticate, async (req, res) => {
   if (req.user.role !== 'STUDENT') return res.status(403).json({ error: 'Unauthorized' });
   try {
-    const dbRes = await query('SELECT cgpa FROM cgpa_records WHERE student_id = $1', [req.user.id]);
-    if (dbRes.rowCount === 0) return res.json({ cgpa: null });
+    const dbRes = await query('SELECT ROUND(AVG(cgpa), 2) as cgpa FROM cgpa_records WHERE student_id = $1', [req.user.id]);
+    if (dbRes.rowCount === 0 || dbRes.rows[0].cgpa === null) return res.json({ cgpa: null });
     res.json({ cgpa: dbRes.rows[0].cgpa });
   } catch (err) {
     console.error(err);
