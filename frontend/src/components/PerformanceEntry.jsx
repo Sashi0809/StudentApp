@@ -4,6 +4,15 @@ import api from '../lib/axios';
 
 export default function PerformanceEntry() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  const SUBJECTS = [
+    "Advanced Algorithms",
+    "CSE101",
+    "Communication Skills",
+    "Intro to Art",
+    "Mathematics II",
+    "Physics 101"
+  ];
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -15,7 +24,8 @@ export default function PerformanceEntry() {
     mid_sem_1: '',
     mid_sem_2: '',
     end_sem_marks: '',
-    internal_marks: ''
+    internal_marks: '',
+    subject: user.subject || ''
   });
 
   const [performances, setPerformances] = useState([]);
@@ -27,7 +37,8 @@ export default function PerformanceEntry() {
       mid_sem_1: p.mid_sem_1?.toString() || '',
       mid_sem_2: p.mid_sem_2?.toString() || '',
       end_sem_marks: p.end_sem_marks?.toString() || '',
-      internal_marks: p.internal_marks?.toString() || ''
+      internal_marks: p.internal_marks?.toString() || '',
+      subject: p.subject || user.subject || ''
     });
   };
 
@@ -66,7 +77,7 @@ export default function PerformanceEntry() {
         ...formData
       });
       setMessage('Performance saved successfully!');
-      setFormData({ attendance: '', mid_sem_1: '', mid_sem_2: '', end_sem_marks: '', internal_marks: '' });
+      setFormData({ attendance: '', mid_sem_1: '', mid_sem_2: '', end_sem_marks: '', internal_marks: '', subject: user.subject || '' });
       setSelectedStudent('');
       fetchData();
     } catch (err) {
@@ -162,13 +173,17 @@ export default function PerformanceEntry() {
                 
  </div>
  <div className="col-span-2">
- <label className="block text-sm text-gray-700 mb-1">Subject (Auto-Assigned)</label>
- <input
-                  type="text"
-                  disabled
-                  value={user.subject || 'Not Set'}
-                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-gray-500 cursor-not-allowed" />
-                
+ <label className="block text-sm text-gray-700 mb-1">Subject</label>
+ <select
+                  required
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-blue-500">
+                  <option value="">-- Choose Subject --</option>
+                  {SUBJECTS.map((sub) => (
+                    <option key={sub} value={sub}>{sub}</option>
+                  ))}
+                </select>
  </div>
  </div>
 
@@ -215,6 +230,7 @@ export default function PerformanceEntry() {
  <div>Mid 2: <span className="text-gray-900">{p.mid_sem_2} / 15</span></div>
  <div>End Sem: <span className="text-gray-900">{p.end_sem_marks} / 50</span></div>
  <div>Total: <span className="text-purple-300 font-bold">{p.final_score}</span></div>
+ <div>Subject: <span className="text-gray-900">{p.subject}</span></div>
  </div>
  </div>
             )}

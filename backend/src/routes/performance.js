@@ -50,10 +50,9 @@ router.post('/', authenticate, async (req, res) => {
   if (user.role !== 'TEACHER') return res.status(403).json({ error: 'Unauthorized' });
   if (user.approval_status !== 'APPROVED') return res.status(403).json({ error: 'Your account is pending approval.' });
 
-  const { student_id, attendance, mid_sem_1, mid_sem_2, internal_marks, end_sem_marks } = req.body;
-  const subject = user.subject;
+  const { student_id, attendance, mid_sem_1, mid_sem_2, internal_marks, end_sem_marks, subject } = req.body;
   if (!student_id || attendance == null || !subject) {
-    return res.status(400).json({ error: 'Missing required fields or teacher subject not set' });
+    return res.status(400).json({ error: 'Missing required fields including subject' });
   }
 
   // Map subject to difficulty
@@ -84,8 +83,8 @@ router.post('/', authenticate, async (req, res) => {
 
     // Save to DB (assignment_avg set to 0 as we no longer use it)
     const insertRes = await query(`
-      INSERT INTO student_performance (student_id, teacher_id, semester_id, attendance, assignment_avg, internal_marks, subject_difficulty, mid_sem_1, mid_sem_2, end_sem_marks, final_score, updated_at, shared_at)
-      VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO student_performance (student_id, teacher_id, semester_id, attendance, assignment_avg, internal_marks, subject_difficulty, mid_sem_1, mid_sem_2, end_sem_marks, final_score, subject, updated_at, shared_at)
+      VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (student_id, teacher_id, semester_id) 
       DO UPDATE SET 
         attendance = EXCLUDED.attendance,
@@ -95,10 +94,11 @@ router.post('/', authenticate, async (req, res) => {
         mid_sem_2 = EXCLUDED.mid_sem_2,
         end_sem_marks = EXCLUDED.end_sem_marks,
         final_score = EXCLUDED.final_score,
+        subject = EXCLUDED.subject,
         updated_at = CURRENT_TIMESTAMP,
         shared_at = CURRENT_TIMESTAMP
       RETURNING *
-    `, [student_id, user.id, semester_id, attendance, intM, subject_difficulty, m1, m2, endM, final_score]);
+    `, [student_id, user.id, semester_id, attendance, intM, subject_difficulty, m1, m2, endM, final_score, subject]);
 
     res.json(insertRes.rows[0]);
   } catch (err) {
@@ -158,7 +158,7 @@ router.get('/', authenticate, async (req, res) => {
 
     if (user.role === 'STUDENT') {
       const q = `
-        SELECT sp.*, u.name as teacher_name, u.subject as subject, sem.name as semester_name 
+        SELECT sp.*, u.name as teacher_name, sem.name as semester_name 
         FROM student_performance sp
         JOIN users u ON sp.teacher_id = u.id
         LEFT JOIN semesters sem ON sp.semester_id = sem.id
@@ -168,7 +168,7 @@ router.get('/', authenticate, async (req, res) => {
       return res.json(dbRes.rows);
     } else if (user.role === 'HOD') {
       const q = `
-        SELECT sp.*, s.name as student_name, t.name as teacher_name, t.subject as subject, sem.name as semester_name 
+        SELECT sp.*, s.name as student_name, t.name as teacher_name, sem.name as semester_name 
         FROM student_performance sp
         JOIN users s ON sp.student_id = s.id
         JOIN users t ON sp.teacher_id = t.id
@@ -201,7 +201,7 @@ router.get('/history', authenticate, async (req, res) => {
 
   try {
     const q = `
-      SELECT sp.*, u.name as teacher_name, u.subject as subject, sem.name as semester_name, sem.start_date, sem.end_date
+      SELECT sp.*, u.name as teacher_name, sem.name as semester_name, sem.start_date, sem.end_date
       FROM student_performance sp
       JOIN users u ON sp.teacher_id = u.id
       JOIN semesters sem ON sp.semester_id = sem.id
