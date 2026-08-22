@@ -9,9 +9,9 @@ export default function PastResults() {
 
   useEffect(() => {
     Promise.all([
-    api.get('/performance/history'),
-    api.get('/cgpa/me').catch(() => ({ data: { cgpa: 0 } }))]
-    ).then(([histRes, cgpaRes]) => {
+      api.get('/performance/history'),
+      api.get('/cgpa/me').catch(() => ({ data: { cgpa: 0 } }))
+    ]).then(([histRes, cgpaRes]) => {
       setHistory(histRes.data);
       setCgpa(cgpaRes.data.cgpa || 0);
       setLoading(false);
@@ -38,9 +38,8 @@ export default function PastResults() {
         <h2 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
           <History className="text-blue-400" /> Academic History
         </h2>
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-5 py-2.5 rounded-xl shadow-sm flex items-center gap-3">
-          <span className="text-blue-900 font-medium">Cumulative GPA:</span>
-          <span className="text-2xl font-bold text-blue-700 tracking-tight">{cgpa.toFixed(2)}</span>
+        <div className="text-gray-600 font-medium">
+          Cumulative GPA: <span className="font-bold text-gray-900">{cgpa.toFixed(2)}</span>
         </div>
       </div>
 

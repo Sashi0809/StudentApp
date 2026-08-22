@@ -154,7 +154,6 @@ export default function MyPerformance() {
  </div>
  </div>
  </div>
-
  </div>
 
  {/* Alerts System based on ML output */}
