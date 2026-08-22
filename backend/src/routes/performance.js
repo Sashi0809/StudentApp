@@ -253,7 +253,7 @@ router.post('/predict-marks', authenticate, async (req, res) => {
     };
 
     const pythonScript = path.join(__dirname, '../../ml/predict_json.py');
-    const pythonProcess = spawn('python', [pythonScript], { timeout: 10000 });
+    const pythonProcess = spawn('python', [pythonScript], { timeout: 30000 });
 
     let result = '';
     let errorOutput = '';
@@ -263,6 +263,7 @@ router.post('/predict-marks', authenticate, async (req, res) => {
 
     pythonProcess.on('close', (code) => {
       if (code !== 0) {
+        console.error(`ML Prediction failed with code ${code}. Error Output:`, errorOutput);
         return res.status(500).json({ error: `ML Prediction failed`, details: errorOutput });
       }
       try {
