@@ -39,7 +39,7 @@ export default function PastResults() {
           <History className="text-blue-400" /> Academic History
         </h2>
         <div className="text-gray-600 font-medium">
-          Cumulative GPA: <span className="font-bold text-gray-900">{cgpa.toFixed(2)}</span>
+          Cumulative GPA: <span className="font-bold text-gray-900">{Number(cgpa).toFixed(2)}</span>
         </div>
       </div>
 
