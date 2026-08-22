@@ -1,8 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM python:3.10-slim
 
-# Install Node.js
-RUN apt-get update && apt-get install -y curl \
+# Install Node.js and required C libraries for Python (like libgomp1 for scikit-learn)
+RUN apt-get update && apt-get install -y curl libgomp1 \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \

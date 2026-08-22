@@ -4,6 +4,7 @@ import joblib
 import pandas as pd
 import os
 import warnings
+import gc
 
 warnings.filterwarnings("ignore")
 
@@ -24,10 +25,6 @@ def main():
         if not (os.path.exists(model_mid1_path) and os.path.exists(model_mid2_path) and os.path.exists(model_end_path)):
             print(json.dumps({"error": "Model files not found"}))
             return
-            
-        model_mid1 = joblib.load(model_mid1_path)
-        model_mid2 = joblib.load(model_mid2_path)
-        model_end = joblib.load(model_end_path)
         
         if isinstance(data, dict):
             df = pd.DataFrame([data])
@@ -58,18 +55,24 @@ def main():
         # Predict Mid 1 if not provided
         provided_mid1 = 'mid_sem_1' in df.columns and pd.notna(df['mid_sem_1'].iloc[0]) and df['mid_sem_1'].iloc[0] != ""
         if not provided_mid1:
+            model_mid1 = joblib.load(model_mid1_path)
             X1 = df[['attendance', 'previous_cgpa', 'subject_difficulty']]
             pred_mid1 = model_mid1.predict(X1)[0]
             df['mid_sem_1'] = pred_mid1
+            del model_mid1
+            gc.collect()
         else:
             df['mid_sem_1'] = float(df['mid_sem_1'].iloc[0])
             
         # Predict Mid 2 if not provided
         provided_mid2 = 'mid_sem_2' in df.columns and pd.notna(df['mid_sem_2'].iloc[0]) and df['mid_sem_2'].iloc[0] != ""
         if not provided_mid2:
+            model_mid2 = joblib.load(model_mid2_path)
             X2 = df[['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1']]
             pred_mid2 = model_mid2.predict(X2)[0]
             df['mid_sem_2'] = pred_mid2
+            del model_mid2
+            gc.collect()
         else:
             df['mid_sem_2'] = float(df['mid_sem_2'].iloc[0])
             
@@ -82,8 +85,11 @@ def main():
             df['internal_marks'] = float(df['internal_marks'].iloc[0])
             
         # Predict End Sem
+        model_end = joblib.load(model_end_path)
         X3 = df[['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1', 'mid_sem_2', 'internal_marks']]
         pred_end = model_end.predict(X3)[0]
+        del model_end
+        gc.collect()
         
         total = df['mid_sem_1'].iloc[0] + df['mid_sem_2'].iloc[0] + df['internal_marks'].iloc[0] + pred_end
         
