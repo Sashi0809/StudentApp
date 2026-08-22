@@ -18,13 +18,25 @@ router.post('/', authenticate, async (req, res) => {
   }
 
   try {
-    const classroomRes = await query('SELECT id FROM classrooms WHERE join_code = $1', [joinCode.toUpperCase()]);
+    const classroomRes = await query(`
+      SELECT c.id, u.department_id AS teacher_department_id 
+      FROM classrooms c
+      JOIN users u ON c.teacher_id = u.id
+      WHERE c.join_code = $1
+    `, [joinCode.toUpperCase()]);
 
     if (classroomRes.rowCount === 0) {
       return res.status(404).json({ error: 'Invalid join code' });
     }
 
-    const classroomId = classroomRes.rows[0].id;
+    const classroom = classroomRes.rows[0];
+
+    // Enforce same-department constraint
+    if (user.department_id !== classroom.teacher_department_id) {
+      return res.status(403).json({ error: 'You can only join classrooms created by teachers within your own department.' });
+    }
+
+    const classroomId = classroom.id;
 
     const checkRes = await query(
       'SELECT * FROM enrollments WHERE student_id = $1 AND classroom_id = $2',
