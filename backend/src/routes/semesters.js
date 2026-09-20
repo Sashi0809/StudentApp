@@ -74,8 +74,7 @@ router.post('/:id/end', authenticate, async (req, res) => {
 
     // 2. Fetch all performance data for this semester
     const perfRes = await query(`
-      SELECT attendance, assignment_avg, mid_marks, internal_marks, subject_difficulty, previous_cgpa, 
-             CASE WHEN final_score >= 50 THEN 1 ELSE 0 END as passed
+      SELECT attendance, previous_cgpa, subject_difficulty, internal_marks, mid_sem_1, mid_sem_2, end_sem_marks
       FROM student_performance 
       WHERE semester_id = $1 AND shared_at IS NOT NULL
     `, [id]);

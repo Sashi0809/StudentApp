@@ -3,10 +3,12 @@ import json
 import joblib
 import pandas as pd
 import os
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score
+import warnings
+
+warnings.filterwarnings("ignore")
 
 def main():
     print("--- 1. ML Retraining Started ---")
@@ -24,18 +26,15 @@ def main():
 
         new_df = pd.DataFrame(data)
         
-        # Define features and target
-        features = ['attendance', 'assignment_avg', 'mid_marks', 'internal_marks', 'subject_difficulty', 'previous_cgpa']
-        target = 'passed'
-        
         # Ensure new_df has required columns
-        missing_cols = [c for c in features + [target] if c not in new_df.columns]
+        required_cols = ['attendance', 'previous_cgpa', 'subject_difficulty', 'internal_marks', 'mid_sem_1', 'mid_sem_2', 'end_sem_marks']
+        missing_cols = [c for c in required_cols if c not in new_df.columns]
         if missing_cols:
             print(f"Missing columns in input data: {missing_cols}")
             return
             
         # Clean new data
-        new_df = new_df[features + [target]].fillna(0)
+        new_df = new_df[required_cols].fillna(0)
         
         # Handle 1st sem students (0 previous cgpa) by imputing with neutral median
         mask = (new_df['previous_cgpa'] == 0)
@@ -44,14 +43,9 @@ def main():
             neutral = median_val if pd.notna(median_val) else 7.0
             new_df.loc[mask, 'previous_cgpa'] = neutral
 
-        # Scale new data from DB (10, 30, 10) UP to match historical data (100, 30, 30)
-        new_df['assignment_avg'] = new_df['assignment_avg'] * 10
-        new_df['internal_marks'] = new_df['internal_marks'] * 3
-
         # Paths
         script_dir = os.path.dirname(os.path.abspath(__file__))
         historical_csv = os.path.join(script_dir, 'historical_data.csv')
-        model_path = os.path.join(script_dir, 'student_pass_model.pkl')
         
         # Append to historical data
         if os.path.exists(historical_csv):
@@ -66,26 +60,33 @@ def main():
         combined_df.to_csv(historical_csv, index=False)
         print("Updated historical_data.csv")
         
-        X = combined_df[features]
-        y = combined_df[target]
+        # Train RF Models
+        print("Training Random Forest models on the accumulated dataset...")
         
-        # Train KNN Classifier (with feature scaling)
-        model = Pipeline([
-            ('scaler', StandardScaler()),
-            ('knn', KNeighborsClassifier(n_neighbors=min(7, len(X)))) # Ensure k is not larger than samples
-        ])
+        # 1. Model for Mid Sem 1
+        X1 = combined_df[['attendance', 'previous_cgpa', 'subject_difficulty']]
+        y1 = combined_df['mid_sem_1']
+        model_mid1 = Pipeline([('scaler', StandardScaler()), ('rf', RandomForestRegressor(n_estimators=100, random_state=42))])
+        model_mid1.fit(X1, y1)
         
-        print("Training model on the accumulated dataset...")
-        model.fit(X, y)
+        # 2. Model for Mid Sem 2
+        X2 = combined_df[['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1']]
+        y2 = combined_df['mid_sem_2']
+        model_mid2 = Pipeline([('scaler', StandardScaler()), ('rf', RandomForestRegressor(n_estimators=100, random_state=42))])
+        model_mid2.fit(X2, y2)
         
-        # Calculate training accuracy just for logging
-        y_pred = model.predict(X)
-        acc = accuracy_score(y, y_pred)
-        print(f"Model Training Accuracy on full dataset: {acc:.4f}")
+        # 3. Model for End Sem
+        X3 = combined_df[['attendance', 'previous_cgpa', 'subject_difficulty', 'mid_sem_1', 'mid_sem_2', 'internal_marks']]
+        y3 = combined_df['end_sem_marks']
+        model_end = Pipeline([('scaler', StandardScaler()), ('rf', RandomForestRegressor(n_estimators=100, random_state=42))])
+        model_end.fit(X3, y3)
         
-        # Save the model
-        joblib.dump(model, model_path)
-        print(f"Successfully saved updated model to {model_path}")
+        # Save Models
+        joblib.dump(model_mid1, os.path.join(script_dir, 'model_mid1.pkl'))
+        joblib.dump(model_mid2, os.path.join(script_dir, 'model_mid2.pkl'))
+        joblib.dump(model_end, os.path.join(script_dir, 'model_end.pkl'))
+        
+        print(f"Successfully saved updated RF models: model_mid1.pkl, model_mid2.pkl, model_end.pkl")
         
     except Exception as e:
         print(f"Error during retraining: {str(e)}")
