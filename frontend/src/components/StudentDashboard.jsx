@@ -16,6 +16,8 @@ import api from '../lib/axios';
 
 
 
+import { useAuth } from '../context/AuthContext';
+
 // Google Classroom style banner colors
 const BANNER_COLORS = [
 'bg-blue-600',
@@ -27,6 +29,7 @@ const BANNER_COLORS = [
 
 
 export default function StudentDashboard() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('classes');
   const [classrooms, setClassrooms] = useState([]);
   const [pendingAssignments, setPendingAssignments] = useState([]);
@@ -175,6 +178,12 @@ export default function StudentDashboard() {
       <div className="flex-1 overflow-y-auto bg-white p-6 md:p-8">
         {activeTab === 'classes' &&
         <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
+            <div className="mb-8 bg-blue-50 border border-blue-200 rounded-xl p-4 flex justify-between items-center text-blue-900">
+               <div>
+                  <h3 className="font-semibold text-lg">Your Academic Profile</h3>
+                  <p className="text-blue-700 text-sm">You are currently in <span className="font-bold">Semester {user?.current_semester || 1}</span>.</p>
+               </div>
+            </div>
             
             {activeSemester && new Date(activeSemester.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000 &&
           <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 shadow-md text-white flex flex-col md:flex-row items-center justify-between gap-4">

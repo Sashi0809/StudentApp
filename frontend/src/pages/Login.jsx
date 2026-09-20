@@ -16,6 +16,7 @@ export default function Login() {
   const [role, setRole] = useState('STUDENT');
   const [departmentId, setDepartmentId] = useState('');
   const [academicYear, setAcademicYear] = useState('1');
+  const [currentSemester, setCurrentSemester] = useState('1');
   const [subject, setSubject] = useState('');
   const [departments, setDepartments] = useState([]);
   const [error, setError] = useState('');
@@ -44,6 +45,7 @@ export default function Login() {
         const payload = { name, email, password, role, department_id: departmentId };
         if (role === 'STUDENT') {
           payload.academic_year = parseInt(academicYear);
+          payload.current_semester = parseInt(currentSemester);
         } else if (role === 'TEACHER') {
           payload.subject = subject;
         }
@@ -104,6 +106,7 @@ export default function Login() {
  </div>
 
  {role === 'STUDENT' &&
+            <>
             <div>
  <label className="block text-gray-700 text-sm font-medium mb-1">Academic Year</label>
  <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-blue-500 transition-colors">
@@ -113,6 +116,15 @@ export default function Login() {
  <option value="4">4th Year</option>
  </select>
  </div>
+ <div>
+ <label className="block text-gray-700 text-sm font-medium mb-1">Current Semester</label>
+ <select value={currentSemester} onChange={(e) => setCurrentSemester(e.target.value)} className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:border-blue-500 transition-colors">
+ {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+   <option key={sem} value={sem}>Semester {sem}</option>
+ ))}
+ </select>
+ </div>
+ </>
             }
 
  {role === 'TEACHER' &&

@@ -43,11 +43,17 @@ router.post('/', authenticate, async (req, res) => {
   try {
     // Check if there's already an active semester. If so, creating a new one as active overrides it.
     // For simplicity, new semesters are created as active by default, ending the previous one.
+    // Deactivate previous active semesters first
+    await query('UPDATE semesters SET is_active = false WHERE is_active = true');
+
     const dbRes = await query(`
       INSERT INTO semesters (name, start_date, end_date, is_active)
       VALUES ($1, $2, $3, true)
       RETURNING *
     `, [name, start_date, end_date]);
+
+    // Increment current_semester for all students
+    await query(`UPDATE users SET current_semester = current_semester + 1 WHERE role = 'STUDENT'`);
 
     res.status(201).json(dbRes.rows[0]);
   } catch (error) {

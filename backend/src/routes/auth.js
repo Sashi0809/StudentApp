@@ -31,12 +31,12 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, name: user.name, email: user.email, department_id: user.department_id, academic_year: user.academic_year, subject: user.subject, approval_status: user.approval_status },
+      { id: user.id, role: user.role, name: user.name, email: user.email, department_id: user.department_id, academic_year: user.academic_year, current_semester: user.current_semester, subject: user.subject, approval_status: user.approval_status },
       process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: '1d' }
     );
 
-    return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, department_id: user.department_id, academic_year: user.academic_year, subject: user.subject, approval_status: user.approval_status } });
+    return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, department_id: user.department_id, academic_year: user.academic_year, current_semester: user.current_semester, subject: user.subject, approval_status: user.approval_status } });
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -44,7 +44,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { name, email, password, role, department_id, academic_year, subject } = req.body;
+  const { name, email, password, role, department_id, academic_year, current_semester, subject } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
@@ -65,14 +65,14 @@ router.post('/register', async (req, res) => {
     const approval_status = role === 'TEACHER' ? 'PENDING' : 'APPROVED';
 
     const userRes = await query(
-      'INSERT INTO users (name, email, password, role, department_id, academic_year, subject, approval_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, email, role, department_id, academic_year, subject, approval_status',
-      [name, email, hashed, role || 'STUDENT', department_id || null, academic_year || null, subject || null, approval_status]
+      'INSERT INTO users (name, email, password, role, department_id, academic_year, current_semester, subject, approval_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, name, email, role, department_id, academic_year, current_semester, subject, approval_status',
+      [name, email, hashed, role || 'STUDENT', department_id || null, academic_year || null, current_semester || 1, subject || null, approval_status]
     );
 
     const user = userRes.rows[0];
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, name: user.name, email: user.email, department_id: user.department_id, academic_year: user.academic_year, subject: user.subject, approval_status: user.approval_status },
+      { id: user.id, role: user.role, name: user.name, email: user.email, department_id: user.department_id, academic_year: user.academic_year, current_semester: user.current_semester, subject: user.subject, approval_status: user.approval_status },
       process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: '1d' }
     );
@@ -91,7 +91,7 @@ router.get('/me', authenticate, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const userRes = await query(
-      'SELECT id, name, email, role, department_id, academic_year, subject, approval_status FROM users WHERE id = $1',
+      'SELECT id, name, email, role, department_id, academic_year, current_semester, subject, approval_status FROM users WHERE id = $1',
       [req.user.id]
     );
     if (userRes.rowCount === 0) return res.status(404).json({ error: 'User not found' });
