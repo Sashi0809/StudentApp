@@ -72,7 +72,7 @@ export default function TimetableView({ onLoad, hideIfEmpty } = {}) {
  {isImage ?
         <img src={fileUrl} alt="Timetable" className="max-w-full h-auto" /> :
         isPDF ?
-        <iframe src={fileUrl} className="w-full h-[600px] border-none" title="Timetable PDF" /> :
+        <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`} className="w-full h-[600px] border-none" title="Timetable PDF" /> :
 
         <div className="text-center p-8">
  <p className="text-gray-700 mb-4">The timetable file cannot be previewed directly.</p>
