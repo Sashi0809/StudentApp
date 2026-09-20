@@ -72,7 +72,14 @@ export default function TimetableView({ onLoad, hideIfEmpty } = {}) {
  {isImage ?
         <img src={fileUrl} alt="Timetable" className="max-w-full h-auto" /> :
         isPDF ?
-        <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`} className="w-full h-[600px] border-none" title="Timetable PDF" /> :
+        <object data={fileUrl} type="application/pdf" className="w-full h-[600px] border-none">
+          <div className="text-center p-8 bg-gray-50 flex flex-col items-center justify-center h-full">
+            <p className="text-gray-700 mb-4">Your browser does not support embedded PDFs.</p>
+            <a href={fileUrl} download target="_blank" rel="noopener noreferrer" className="text-white bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors">
+              Download PDF Instead
+            </a>
+          </div>
+        </object> :
 
         <div className="text-center p-8">
  <p className="text-gray-700 mb-4">The timetable file cannot be previewed directly.</p>
