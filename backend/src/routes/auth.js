@@ -51,6 +51,16 @@ router.post('/register', async (req, res) => {
   }
 
   try {
+    if (role === 'HOD' && department_id) {
+      const existingHod = await query(
+        'SELECT id FROM users WHERE role = $1 AND department_id = $2',
+        ['HOD', department_id]
+      );
+      if (existingHod.rowCount > 0) {
+        return res.status(400).json({ error: 'An HOD already exists for this department' });
+      }
+    }
+
     const hashed = await bcrypt.hash(password, 10);
     const approval_status = role === 'TEACHER' ? 'PENDING' : 'APPROVED';
 
