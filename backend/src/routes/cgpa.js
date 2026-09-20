@@ -26,8 +26,8 @@ router.post('/upload', authenticate, async (req, res) => {
     let successCount = 0;
     for (const record of records) {
       const { student_email, cgpa } = record;
-      // Find student by email
-      const studentRes = await query('SELECT id FROM users WHERE email = $1 AND role = $2', [student_email, 'STUDENT']);
+      // Find student by email within the HOD's department
+      const studentRes = await query('SELECT id FROM users WHERE email = $1 AND role = $2 AND department_id = $3', [student_email, 'STUDENT', user.department_id]);
       if (studentRes.rowCount > 0) {
         const student_id = studentRes.rows[0].id;
         await query(`
@@ -55,8 +55,9 @@ router.get('/', authenticate, async (req, res) => {
       SELECT cr.*, u.name as student_name, u.email as student_email
       FROM cgpa_records cr
       JOIN users u ON cr.student_id = u.id
+      WHERE u.department_id = $1
     `;
-    const dbRes = await query(q);
+    const dbRes = await query(q, [req.user.department_id]);
     res.json(dbRes.rows);
   } catch (err) {
     console.error(err);
