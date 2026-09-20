@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Download } from 'lucide-react';
+import { Calendar, Download, FileText } from 'lucide-react';
 import api from '../lib/axios';
 
 
@@ -72,14 +72,14 @@ export default function TimetableView({ onLoad, hideIfEmpty } = {}) {
  {isImage ?
         <img src={fileUrl} alt="Timetable" className="max-w-full h-auto" /> :
         isPDF ?
-        <object data={fileUrl} type="application/pdf" className="w-full h-[600px] border-none">
-          <div className="text-center p-8 bg-gray-50 flex flex-col items-center justify-center h-full">
-            <p className="text-gray-700 mb-4">Your browser does not support embedded PDFs.</p>
-            <a href={fileUrl} download target="_blank" rel="noopener noreferrer" className="text-white bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors">
-              Download PDF Instead
-            </a>
-          </div>
-        </object> :
+        <div className="text-center p-8 bg-gray-50 flex flex-col items-center justify-center w-full h-[400px]">
+          <FileText size={64} className="text-red-500 mb-4" />
+          <h4 className="text-xl font-medium text-gray-900 mb-2">Timetable PDF</h4>
+          <p className="text-gray-500 mb-6">Click below to securely open or download the timetable document.</p>
+          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-white bg-blue-600 hover:bg-blue-700 px-8 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
+            Open Timetable
+          </a>
+        </div> :
 
         <div className="text-center p-8">
  <p className="text-gray-700 mb-4">The timetable file cannot be previewed directly.</p>
