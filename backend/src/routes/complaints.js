@@ -33,9 +33,10 @@ router.get('/', authenticate, async (req, res) => {
         SELECT c.*, s.name as student_name, s.email as student_email 
         FROM complaints c
         JOIN users s ON c.student_id = s.id
+        WHERE s.department_id = $1
         ORDER BY c.created_at DESC
       `;
-      const dbRes = await query(q);
+      const dbRes = await query(q, [user.department_id]);
       return res.json(dbRes.rows);
     } else if (user.role === 'STUDENT') {
       const q = `SELECT * FROM complaints WHERE student_id = $1 ORDER BY created_at DESC`;
